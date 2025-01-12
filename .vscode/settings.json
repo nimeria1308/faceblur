@@ -1,0 +1,17 @@
+{
+    "files.exclude": {
+        "**/__pycache__": true,
+        ".venv/": true,
+        "dist/": true
+    },
+    "editor.formatOnSave": true,
+    "[python]": {
+        "diffEditor.ignoreTrimWhitespace": false,
+        "editor.defaultFormatter": "ms-python.autopep8"
+    },
+    "autopep8.args": [
+        "--max-line-length",
+        "120",
+        "--experimental"
+    ]
+}
