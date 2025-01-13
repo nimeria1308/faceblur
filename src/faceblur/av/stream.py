@@ -1,0 +1,48 @@
+# Copyright (C) 2025, Simona Dimitrova
+
+import av
+import av.container
+import av.data.stream
+import av.stream
+
+
+class InputStream():
+    _stream: av.stream.Stream
+
+    def __init__(self, stream: av.stream.Stream):
+        self._stream = stream
+
+
+class OutputStream():
+    _output_stream: av.stream.Stream
+    _input_stream: av.stream.Stream
+
+    def __init__(self, output_stream: av.stream.Stream, input_stream: av.stream.Stream = None):
+        self._output_stream = output_stream
+        self._input_stream = input_stream
+
+    def process(self, packet: av.Packet, frame_callback=None):
+        # Do nothing by default
+        pass
+
+
+class CopyOutputStream(OutputStream):
+    def __init__(self, output_container: av.container.OutputContainer, input_stream: av.stream.Stream = None):
+        if input_stream.type == "data":
+            # DataStream.name is 'the codec'
+            output_stream = output_container.add_data_stream(input_stream.name)
+        else:
+            output_stream = output_container.add_stream_from_template(input_stream)
+
+        super().__init__(output_stream, input_stream)
+
+    def process(self, packet: av.Packet, frame_callback=None):
+        # Simply copy the packet, i.e. remux
+
+        # We need to skip the "flushing" packets that `demux` generates.
+        if packet.dts is None:
+            return
+
+        # We need to associate the packet with the this stream
+        packet.stream = self._output_stream
+        self._output_stream.container.mux(packet)

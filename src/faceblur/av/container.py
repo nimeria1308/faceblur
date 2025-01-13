@@ -1,8 +1,13 @@
 # Copyright (C) 2025, Simona Dimitrova
 
 import av
+import av.container
+import av.stream
+import logging
+import pymediainfo
 
-from faceblur.av.video import encoder_from_decoder
+from faceblur.av.stream import InputStream, OutputStream, CopyOutputStream
+from faceblur.av.video import InputVideoStream, OutputVideoStream
 
 EXTENSIONS = [
     "asf", "wmv",                   # windows video
@@ -15,78 +20,119 @@ EXTENSIONS = [
 ]
 
 
-def process(filename_input, filename_output, frame_callback, encoder=None, thread_type=None):
-    with av.open(filename_input) as container_input:
-        with av.open(filename_output, "w") as container_output:
+class Container():
+    def __init__(self, container: av.container.Container):
+        self._container = container
 
-            def packet_process_video(packet, stream_output):
-                for frame in packet.decode():
-                    # process frame
-                    frame = frame_callback(frame)
+    # Explicit close
+    def close(self):
+        """Close the container resource"""
+        self._container.close()
 
-                    # now encode
-                    for packet_output in stream_output.encode(frame):
-                        container_output.mux(packet_output)
+    # Make sure not leaking on object destruction
+    def __dealloc__(self):
+        self.close()
 
-                if packet.dts is None:
-                    # Flush the encoder.
-                    # Note that the "empty" packet MUST fist be passed to the
-                    # encoder to signal flushing
-                    while True:
-                        try:
-                            for packet_output in stream_output.encode(None):
-                                container_output.mux(packet_output)
-                        except av.error.EOFError:
-                            break
+    # Context manager (with/as)
+    def __enter__(self):
+        return self
 
-            def packet_remux(packet, stream_output):
-                # We need to skip the "flushing" packets that `demux` generates.
-                if packet.dts is None:
-                    return
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
-                # We need to assign the packet to the new stream.
-                packet.stream = stream_output
-                container_output.mux(packet)
 
-            def packet_skip(packet, stream_output):
-                # Simply ignore the packet
-                pass
+class InputContainer(Container):
+    _container: av.container.InputContainer
 
-            stream_handlers = {
-                "video": packet_process_video,
-                "audio": packet_remux,
-                # currently data streams are not remuxed, as it causes a sigfault in PyAV
-            }
+    def __init__(self, filename: str, thread_type: str = None):
+        super().__init__(av.open(filename, metadata_errors="ignore"))
 
-            def create_stream_video(stream_input):
-                stream_output = encoder_from_decoder(stream_input, container_output, encoder)
+        self._info = pymediainfo.MediaInfo.parse(filename)
+        self._duration = float(self._container.duration / av.time_base) if self._container.duration else 0
 
-                # Make use of better threading
-                if thread_type:
-                    stream_input.thread_type = thread_type
-                    stream_output.thread_type = thread_type
+        # Update the thread type for the video decoders
+        if thread_type is not None:
+            for stream in self._container.streams.video:
+                stream.thread_type = thread_type
 
-                return stream_output
+        # Create dummy input streams for all non-video streams
+        streams = [InputStream(stream) for stream in self._container.streams if stream.type != "video"]
 
-            def create_stream_remux(stream_input):
-                return container_output.add_stream_from_template(stream_input)
+        # video stream infos (tracks in MediaInfo terms)
+        tracks = self._info.video_tracks
 
-            def create_stream_nop(stream_input):
-                pass
+        # If there is only one track and ID, the ID doesn't matter
+        if (len(tracks) == 1) and (len(self._container.streams.video) == 1):
+            streams += [InputVideoStream(self._container.streams.video[0], self._info.video_tracks[0])]
+        else:
+            # Multiple tracks require matching the track IDs
+            # Reshape the tracks into a {id: track}
+            tracks = {t.track_id: t for t in tracks}
 
-            output_creators = {
-                "video": create_stream_video,
-                "audio": create_stream_remux,
-                # currently data streams are not remuxed, as it causes a sigfault in PyAV
-            }
+            # Directly use the ID for container formats that support IDs, e.g. MOV, MPEG, etc., see AVFMT_SHOW_IDS.
+            # If IDs are not supported, assume the ID from the index the way MediaInfo expects them to be
+            streams += [
+                InputVideoStream(stream, tracks[stream.id if self._container.format.show_ids else stream.index + 1])
+                for stream in self._container.streams.video
+            ]
 
-            def create_output_stream(stream_input):
-                output_stream = output_creators.get(stream_input.type, create_stream_nop)(stream_input)
-                output_handler = stream_handlers.get(stream_input.type, packet_skip)
-                return output_stream, output_handler
+        # Save as a read-only sequence, i.e. a tuple
+        self._streams = tuple(streams)
 
-            streams = {stream: create_output_stream(stream) for stream in container_input.streams}
+    @property
+    def streams(self):
+        return self._streams
 
-            for packet in container_input.demux():
-                output_stream, stream_handler = streams.get(packet.stream)
-                stream_handler(packet, output_stream)
+    def demux(self):
+        return self._container.demux()
+
+
+class OutputContainer(Container):
+    _container: av.container.OutputContainer
+    _streams: dict[av.stream.Stream, OutputStream]
+
+    def __init__(self, filename: str, template: InputContainer = None):
+        super().__init__(av.open(filename, "w"))
+
+        self._streams = {}
+
+        if template:
+            # Create output streams matching the input ones
+            for stream in template._streams:
+                self.add_stream_from_template(stream)
+
+    def add_stream_from_template(self, template: InputStream):
+        STREAM_TYPES = {
+            "audio": CopyOutputStream,
+            "video": OutputVideoStream,
+            # currently subtitles streams are not remuxed, as this needs to be tested
+            # currently data streams are not remuxed, as no data encoders are present,
+            # and creating a data stream without a codec only appears to work for .ts
+        }
+
+        if template._stream.type not in STREAM_TYPES:
+            # Don't handle unsupported stream types
+            logging.getLogger(__name__).warning("Skipping unsupported stream type %s", template._stream.type)
+            return None
+
+        # create the stream wrapper
+        stream = STREAM_TYPES[template._stream.type](self._container, template._stream)
+
+        # add to mappings of input -> output streams
+        self._streams[template._stream] = stream
+
+        # and return to user
+        return stream
+
+    @property
+    def streams(self):
+        return tuple(self._streams.values())
+
+    def mux(self, packets: av.Packet, frame_callback=None):
+        if isinstance(packets, av.Packet):
+            packets = [packets]
+
+        for packet in packets:
+            if packet.stream in self._streams:
+                # Process the packet (this may mux it)
+                self._streams[packet.stream].process(packet, frame_callback)

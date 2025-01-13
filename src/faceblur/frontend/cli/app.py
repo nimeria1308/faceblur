@@ -1,17 +1,27 @@
 # Copyright (C) 2025, Simona Dimitrova
 
 import argparse
+import av
 import os
 import tqdm
 
-from faceblur.av.container import EXTENSIONS as VIDEO_EXTENSIONS, process as process_video
+from faceblur.av.container import EXTENSIONS as VIDEO_EXTENSIONS, InputContainer, OutputContainer
 from faceblur.av.video import ENCODERS, THREAD_TYPES, THREAD_TYPE_DEFAULT
+from PIL import ImageFilter
+
+av.logging.set_level(av.logging.ERROR)
 
 OUTPUT_DEFAULT = "faceblur"
 
 
-def __process_video_frame(frame):
-    return frame
+def __process_video_frame(frame: av.VideoFrame):
+    img = frame.to_image()
+    img = img.filter(ImageFilter.BoxBlur(64))
+    new_frame = av.VideoFrame.from_image(img)
+    new_frame.time_base = frame.time_base
+    new_frame.dts = frame.dts
+    new_frame.pts = frame.pts
+    return new_frame
 
 
 def __create_output(filename, output):
@@ -63,10 +73,16 @@ def main():
 
     # Start processing them one by one
     with tqdm.tqdm(filenames, unit="file(s)") as progress:
-        for filename_input in progress:
-            progress.set_description(desc=os.path.basename(filename_input))
-            filename_output = __create_output(filename_input, args.output)
-            process_video(filename_input, filename_output, __process_video_frame, args.encoder, args.thread)
+        for input_filename in progress:
+            progress.set_description(desc=os.path.basename(input_filename))
+            output_filename = __create_output(input_filename, args.output)
+            with InputContainer(input_filename, args.thread) as input_container:
+                with OutputContainer(output_filename, input_container) as output_container:
+                    # Demux the packet from input
+                    packet = input_container.demux()
+
+                    # Put into output (if demuxed)
+                    output_container.mux(packet, __process_video_frame)
 
 
 if __name__ == "__main__":
