@@ -15,9 +15,9 @@ class InputStream():
 
 class OutputStream():
     _output_stream: av.stream.Stream
-    _input_stream: av.stream.Stream
+    _input_stream: InputStream
 
-    def __init__(self, output_stream: av.stream.Stream, input_stream: av.stream.Stream = None):
+    def __init__(self, output_stream: av.stream.Stream, input_stream: InputStream = None):
         self._output_stream = output_stream
         self._input_stream = input_stream
 
@@ -27,12 +27,12 @@ class OutputStream():
 
 
 class CopyOutputStream(OutputStream):
-    def __init__(self, output_container: av.container.OutputContainer, input_stream: av.stream.Stream = None):
-        if input_stream.type == "data":
+    def __init__(self, output_container: av.container.OutputContainer, input_stream: InputStream = None):
+        if input_stream._stream.type == "data":
             # DataStream.name is 'the codec'
-            output_stream = output_container.add_data_stream(input_stream.name)
+            output_stream = output_container.add_data_stream(input_stream._stream.name)
         else:
-            output_stream = output_container.add_stream_from_template(input_stream)
+            output_stream = output_container.add_stream_from_template(input_stream._stream)
 
         super().__init__(output_stream, input_stream)
 

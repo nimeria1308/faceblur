@@ -42,19 +42,19 @@ class InputVideoStream(InputStream):
 class OutputVideoStream(OutputStream):
     def __init__(self,
                  output_container: av.container.OutputContainer,
-                 input_stream: av.VideoStream = None,
+                 input_stream: InputVideoStream = None,
                  encoder: str = None):
 
         if not encoder:
             # Use same encoder as decoder
-            encoder = input_stream.codec.name
+            encoder = input_stream._stream.codec.name
 
         # We need a concrete frame rate to pass to add_stream
-        frame_rate = input_stream.codec_context.framerate
+        frame_rate = input_stream._stream.codec_context.framerate
         if not frame_rate:
             # variable frame rate, but some encoders don't seem to work fine with it
             # so use the guessed one
-            frame_rate = round(input_stream.guessed_rate)
+            frame_rate = round(input_stream._stream.guessed_rate)
 
         output_stream = output_container.add_stream(encoder, frame_rate)
 
@@ -88,9 +88,12 @@ class OutputVideoStream(OutputStream):
         ]
 
         for p in params:
-            value = getattr(input_stream.codec_context, p)
+            value = getattr(input_stream._stream.codec_context, p)
             if value is not None:
                 setattr(output_stream.codec_context, p, value)
+
+        # Get rotation from stream side data
+        rotation = float(input_stream.info.get("rotation", 0))
 
         super().__init__(output_stream, input_stream)
 

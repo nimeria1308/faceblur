@@ -63,7 +63,7 @@ class InputContainer(Container):
 
         # If there is only one track and ID, the ID doesn't matter
         if (len(tracks) == 1) and (len(self._container.streams.video) == 1):
-            streams += [InputVideoStream(self._container.streams.video[0], self._info.video_tracks[0])]
+            streams += [InputVideoStream(self._container.streams.video[0], vars(self._info.video_tracks[0]))]
         else:
             # Multiple tracks require matching the track IDs
             # Reshape the tracks into a {id: track}
@@ -72,9 +72,9 @@ class InputContainer(Container):
             # Directly use the ID for container formats that support IDs, e.g. MOV, MPEG, etc., see AVFMT_SHOW_IDS.
             # If IDs are not supported, assume the ID from the index the way MediaInfo expects them to be
             streams += [
-                InputVideoStream(stream, tracks[stream.id if self._container.format.show_ids else stream.index + 1])
-                for stream in self._container.streams.video
-            ]
+                InputVideoStream(
+                    stream, vars(tracks[stream.id if self._container.format.show_ids else stream.index + 1]))
+                for stream in self._container.streams.video]
 
         # Save as a read-only sequence, i.e. a tuple
         self._streams = tuple(streams)
@@ -116,7 +116,7 @@ class OutputContainer(Container):
             return None
 
         # create the stream wrapper
-        stream = STREAM_TYPES[template._stream.type](self._container, template._stream)
+        stream = STREAM_TYPES[template._stream.type](self._container, template)
 
         # add to mappings of input -> output streams
         self._streams[template._stream] = stream
