@@ -9,15 +9,27 @@ import pymediainfo
 from faceblur.av.stream import InputStream, OutputStream, CopyOutputStream
 from faceblur.av.video import InputVideoStream, OutputVideoStream
 
-EXTENSIONS = [
-    "asf", "wmv",                   # windows video
-    "avi",                          # audio/video interleave
-    "mov", "mp4", "m4v", "3gp",     # mov
-    "mkv",                          # matroska
-    "mpg", "mpeg", "vob",           # MPEG1/2
-    "mjpg",                         # Motion JPEG
-    "webm",
-]
+FORMATS = {
+    "mjpeg": ["mjpg", "mjpeg"],                 # raw MJPEG video, Loki SDL MJPEG
+    "wmv": ["wmv", "asf"],                      # ASF (Advanced / Active Streaming Format)
+    "avi": ["avi"],                             # AVI (Audio Video Interleaved)
+    "mpeg": ["mpg", "mpeg"],                    # MPEG-1 Systems / MPEG program stream
+    "mpeg-ts": ["ts", "m2t", "mts", "m2ts"],    # MPEG-TS (MPEG-2 Transport Stream)
+    "3gp": ["3gp"],                             # 3GP (3GPP file format)
+    "3g2": ["3g2"],                             # 3GP2 (3GPP2 file format)
+    "mp4": ["mp4"],                             # MP4 (MPEG-4 Part 14)
+    "mov": ["mov"],                             # QuickTime / MOV
+    "mkv": ["mkv"],                             # Matroska
+    "webm": ["webm"],                           # WebM
+    "raw.h261": ["h261"],                       # raw H.261
+    "raw.h263": ["h263"],                       # raw H.263
+    "raw.h264": ["h264"],                       # raw H.264 video
+    "raw.hevc": ["hevc"],                       # raw HEVC video
+    "raw.yuv": ["yuv"],                         # raw YUV video
+    "raw.rgb": ["rgb"],                         # raw RGB video
+}
+
+EXTENSIONS = sorted(list(set([ext for format in FORMATS.values() for ext in format])))
 
 
 class Container():

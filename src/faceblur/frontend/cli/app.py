@@ -5,7 +5,9 @@ import av
 import os
 import tqdm
 
-from faceblur.av.container import EXTENSIONS as VIDEO_EXTENSIONS, InputContainer, OutputContainer
+from faceblur.av.container import EXTENSIONS as CONTAINER_EXENTSIONS
+from faceblur.av.container import FORMATS as CONTAINER_FORMATS
+from faceblur.av.container import InputContainer, OutputContainer
 from faceblur.av.video import ENCODERS, THREAD_TYPES, THREAD_TYPE_DEFAULT
 from PIL import ImageFilter
 
@@ -24,13 +26,18 @@ def __process_video_frame(frame: av.VideoFrame):
     return new_frame
 
 
-def __create_output(filename, output):
+def __create_output(filename, output, format=None):
     if not os.path.isabs(output):
         # create from filename's path
         output = os.path.abspath(os.path.join(os.path.dirname(filename), output))
 
     # Create the output directory
     os.makedirs(output, exist_ok=True)
+
+    if format:
+        filename, ext = os.path.splitext(filename)
+        ext = CONTAINER_FORMATS[format][0]
+        filename = f"{filename}.{ext}"
 
     return os.path.join(output, os.path.basename(filename))
 
@@ -51,8 +58,14 @@ def main():
 
     parser.add_argument("--encoder", "-e", choices=ENCODERS,
                         help="""
-                        Select a custom encoder for the videos.
-                        If not speciefied it will use the same as the input video""")
+                        Select a custom video encoder.
+                        If not speciefied it will use the same codecs as in the input videos""")
+
+    parser.add_argument("--format", "-f",
+                        choices=sorted(list(CONTAINER_FORMATS.keys())),
+                        help="""
+                        Select a custom container format for video files.
+                        If not speciefied it will use the same cotainer as each input.""")
 
     parser.add_argument("--thread", "-t",
                         choices=THREAD_TYPES,
@@ -65,7 +78,7 @@ def main():
     filenames = []
     for filename in args.input:
         _, ext = os.path.splitext(filename)
-        if ext[1:].lower() not in VIDEO_EXTENSIONS:
+        if ext[1:].lower() not in CONTAINER_EXENTSIONS:
             print(f"Skipping unsupported file type : {os.path.basename(filename)}")
             continue
 
@@ -75,7 +88,7 @@ def main():
     with tqdm.tqdm(filenames, unit="file(s)") as progress:
         for input_filename in progress:
             progress.set_description(desc=os.path.basename(input_filename))
-            output_filename = __create_output(input_filename, args.output)
+            output_filename = __create_output(input_filename, args.output, args.format)
             with InputContainer(input_filename, args.thread) as input_container:
                 with OutputContainer(output_filename, input_container) as output_container:
                     # Demux the packet from input
