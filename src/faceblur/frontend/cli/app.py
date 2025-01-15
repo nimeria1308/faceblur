@@ -26,10 +26,10 @@ def __process_video_frame(frame: av.VideoFrame):
     return new_frame
 
 
-def __create_output(filename, output, format=None):
-    if not os.path.isabs(output):
+def __create_output(filename, output=None, format=None):
+    if output is None:
         # create from filename's path
-        output = os.path.abspath(os.path.join(os.path.dirname(filename), output))
+        output = os.path.abspath(os.path.join(os.path.dirname(filename), OUTPUT_DEFAULT))
 
     # Create the output directory
     os.makedirs(output, exist_ok=True)
@@ -51,10 +51,12 @@ def main():
                         nargs="+",
                         help="Input file(s). May be photos or videos")
 
-    parser.add_argument("--output", "-o",
-                        default=OUTPUT_DEFAULT,
-                        help=f"""
-                        Output folder for the blurred files. Defaults to {OUTPUT_DEFAULT}""")
+    parser.add_argument(
+        "--output", "-o", help=f"""
+                        Output folder for the blurred files.
+                        Relative and absolute paths are supported, in which case all files will be saved to that folder".
+                        If not specified it will create {OUTPUT_DEFAULT} in the directory of each input.
+                        Absolute paths are supported, in which case all files will be saved in that folder.""")
 
     parser.add_argument("--encoder", "-e", choices=ENCODERS,
                         help="""
