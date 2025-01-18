@@ -2,9 +2,12 @@
 
 import av
 import av.stream
+import math
 import pymediainfo
 
 from faceblur.av.stream import InputStream, OutputStream
+from faceblur.av.filter import Filter, Graph
+from faceblur.av.packet import Packet
 
 THREAD_TYPES = [
     "SLICE",
@@ -33,9 +36,7 @@ def _get_angle360(angle: float):
     return angle - 360 * int(angle/360 + 0.9/360)
 
 
-def _dimensions_for_rotated(width: int, height: int, rotation: float):
-    angle = _get_angle360(rotation)
-
+def _dimensions_for_rotated(width, height, angle):
     if abs(angle - 90) < 1:
         # Rotated by 90
         return height, width
@@ -46,8 +47,38 @@ def _dimensions_for_rotated(width: int, height: int, rotation: float):
         return width, height
 
 
+def _filters_for_rotated(angle, input_stream: InputStream):
+    # Handle different rotations.
+    # See `if (autorotate) {` in fftools/ffplay.c
+    if abs(angle - 90) < 1:
+        # Rotated by 90. Simple transpose is enough
+        return [
+            Filter("transpose", dir="clock"),
+        ]
+    elif abs(angle - 180) < 1:
+        # Rotated by 180. Use horizontal and vertical flip
+        return [
+            Filter("hflip"),
+            Filter("vflip"),
+        ]
+    elif abs(angle - 270) < 1:
+        # Rotated by 270. Simple transpose is enough
+        return [
+            Filter("transpose", dir="cclock"),
+        ]
+    elif abs(angle) > 1:
+        # Generic rotation by an odd angle
+        return [
+            Filter("rotate", angle=angle * (math.pi / 180)),
+        ]
+    else:
+        # No rotation necessary (0 <= angle < 1)
+        return None
+
+
 class InputVideoStream(InputStream):
     _info: pymediainfo.Track
+    _graph = None
 
     def __init__(self, stream: av.stream.Stream, info: pymediainfo.Track):
         super().__init__(stream)
@@ -56,7 +87,14 @@ class InputVideoStream(InputStream):
         # Get rotation from stream side data and fix the resolutions
         rotation = float(info.get("rotation", 0))
         cc = stream.codec_context
-        self._width, self._height = _dimensions_for_rotated(cc.width, cc.height, rotation)
+        angle = _get_angle360(rotation)
+        self._width, self._height = _dimensions_for_rotated(cc.width, cc.height, angle)
+
+        if rotation:
+            # Need to create rotation filters
+            filters = _filters_for_rotated(angle, stream)
+            if filters:
+                self._graph = Graph(self, filters)
 
     @property
     def width(self):
@@ -69,6 +107,17 @@ class InputVideoStream(InputStream):
     @property
     def info(self):
         return self._info
+
+
+class VideoPacket(Packet):
+    _stream: InputVideoStream
+
+    def decode(self):
+        for frame in self._packet.decode():
+            if self._stream._graph:
+                self._stream._graph.push(frame)
+                frame = self._stream._graph.pull()
+            yield frame
 
 
 class OutputVideoStream(OutputStream):

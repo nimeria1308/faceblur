@@ -8,7 +8,7 @@ import pymediainfo
 
 from faceblur.av.packet import Packet
 from faceblur.av.stream import InputStream, OutputStream, CopyOutputStream
-from faceblur.av.video import InputVideoStream, OutputVideoStream
+from faceblur.av.video import InputVideoStream, VideoPacket, OutputVideoStream
 
 FORMATS = {
     "mjpeg": ["mjpg", "mjpeg"],                 # raw MJPEG video, Loki SDL MJPEG
@@ -97,7 +97,10 @@ class InputContainer(Container):
 
     def demux(self):
         for packet in self._container.demux():
-            yield Packet(packet, self._streams[packet.stream])
+            if packet.stream.type == "video":
+                yield VideoPacket(packet, self._streams[packet.stream])
+            else:
+                yield Packet(packet, self._streams[packet.stream])
 
 
 class OutputContainer(Container):
