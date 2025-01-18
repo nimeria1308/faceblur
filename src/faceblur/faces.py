@@ -72,4 +72,4 @@ def identify_faces_from_video(container: InputContainer, threads=os.cpu_count(),
 
         _process_done(futures)
 
-    return {index: [faces[frame] for frame in faces] for index, faces in faces.items()}
+    return {index: [faces[frame] for frame in sorted(faces)] for index, faces in faces.items()}
