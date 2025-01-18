@@ -6,6 +6,7 @@ import av.stream
 import logging
 import pymediainfo
 
+from faceblur.av.packet import Packet
 from faceblur.av.stream import InputStream, OutputStream, CopyOutputStream
 from faceblur.av.video import InputVideoStream, OutputVideoStream
 
@@ -68,14 +69,15 @@ class InputContainer(Container):
                 stream.thread_type = thread_type
 
         # Create dummy input streams for all non-video streams
-        streams = [InputStream(stream) for stream in self._container.streams if stream.type != "video"]
+        self._streams = {stream: InputStream(stream) for stream in self._container.streams if stream.type != "video"}
 
         # video stream infos (tracks in MediaInfo terms)
         tracks = self._info.video_tracks
 
         # If there is only one track and ID, the ID doesn't matter
         if (len(tracks) == 1) and (len(self._container.streams.video) == 1):
-            streams += [InputVideoStream(self._container.streams.video[0], vars(self._info.video_tracks[0]))]
+            stream = self._container.streams.video[0]
+            self._streams[stream] = InputVideoStream(stream, vars(self._info.video_tracks[0]))
         else:
             # Multiple tracks require matching the track IDs
             # Reshape the tracks into a {id: track}
@@ -83,25 +85,24 @@ class InputContainer(Container):
 
             # Directly use the ID for container formats that support IDs, e.g. MOV, MPEG, etc., see AVFMT_SHOW_IDS.
             # If IDs are not supported, assume the ID from the index the way MediaInfo expects them to be
-            streams += [
+            self._streams.update({
+                stream:
                 InputVideoStream(
                     stream, vars(tracks[stream.id if self._container.format.show_ids else stream.index + 1]))
-                for stream in self._container.streams.video]
-
-        # Save as a read-only sequence, i.e. a tuple
-        self._streams = tuple(streams)
+                for stream in self._container.streams.video})
 
     @property
     def streams(self):
-        return self._streams
+        return tuple(self._streams.values())
 
     def demux(self):
-        return self._container.demux()
+        for packet in self._container.demux():
+            yield Packet(packet, self._streams[packet.stream])
 
 
 class OutputContainer(Container):
     _container: av.container.OutputContainer
-    _streams: dict[av.stream.Stream, OutputStream]
+    _streams: dict[InputStream, OutputStream]
 
     def __init__(self, filename: str, template: InputContainer = None):
         super().__init__(av.open(filename, "w"))
@@ -110,7 +111,7 @@ class OutputContainer(Container):
 
         if template:
             # Create output streams matching the input ones
-            for stream in template._streams:
+            for stream in template._streams.values():
                 self.add_stream_from_template(stream)
 
     def add_stream_from_template(self, template: InputStream):
@@ -131,7 +132,7 @@ class OutputContainer(Container):
         stream = STREAM_TYPES[template._stream.type](self._container, template)
 
         # add to mappings of input -> output streams
-        self._streams[template._stream] = stream
+        self._streams[template] = stream
 
         # and return to user
         return stream
@@ -141,7 +142,7 @@ class OutputContainer(Container):
         return tuple(self._streams.values())
 
     def mux(self, packets: av.Packet, frame_callback=None):
-        if isinstance(packets, av.Packet):
+        if isinstance(packets, Packet):
             packets = [packets]
 
         for packet in packets:

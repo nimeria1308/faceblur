@@ -6,19 +6,20 @@ import av.data.stream
 import av.stream
 
 
-class InputStream():
+class Stream():
     _stream: av.stream.Stream
 
     def __init__(self, stream: av.stream.Stream):
         self._stream = stream
 
 
-class OutputStream():
-    _output_stream: av.stream.Stream
-    _input_stream: InputStream
+class InputStream(Stream):
+    pass
 
+
+class OutputStream(Stream):
     def __init__(self, output_stream: av.stream.Stream, input_stream: InputStream = None):
-        self._output_stream = output_stream
+        super().__init__(output_stream)
         self._input_stream = input_stream
 
     def process(self, packet: av.Packet, frame_callback=None):
@@ -44,5 +45,5 @@ class CopyOutputStream(OutputStream):
             return
 
         # We need to associate the packet with the this stream
-        packet.stream = self._output_stream
-        self._output_stream.container.mux(packet)
+        packet.stream = self
+        self._stream.container.mux(packet._packet)

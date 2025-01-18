@@ -129,8 +129,8 @@ class OutputVideoStream(OutputStream):
                 frame = frame_callback(frame)
 
             # now encode
-            for packet_output in self._output_stream.encode(frame):
-                self._output_stream.container.mux(packet_output)
+            for packet_output in self._stream.encode(frame):
+                self._stream.container.mux(packet_output)
 
         if packet.dts is None:
             # Flush the encoder.
@@ -138,7 +138,7 @@ class OutputVideoStream(OutputStream):
             # encoder to signal flushing
             while True:
                 try:
-                    for packet_output in self._output_stream.encode(None):
-                        self._output_stream.container.mux(packet_output)
+                    for packet_output in self._stream.encode(None):
+                        self._stream.container.mux(packet_output)
                 except av.error.EOFError:
                     break
