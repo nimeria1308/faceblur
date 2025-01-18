@@ -165,6 +165,10 @@ class OutputVideoStream(OutputStream):
             "framerate",
 
             "extradata",
+
+            # Copy over the thread config
+            "thread_type",
+            "thread_count",
         ]
 
         for p in params:
