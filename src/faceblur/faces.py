@@ -27,6 +27,12 @@ def identify_faces_from_image(image: Image, max_side=MAX_IMAGE_SIDE):
     return face_recognition.face_locations(np.array(image))
 
 
+def _interpolate_faces(faces):
+    # TODO: Need to fill in and interpolate missed faces.
+    #
+    return faces
+
+
 def _process_frame(image, index, frame, max_side):
     return index, frame, identify_faces_from_image(image, max_side)
 
@@ -72,4 +78,4 @@ def identify_faces_from_video(container: InputContainer, threads=os.cpu_count(),
 
         _process_done(futures)
 
-    return {index: [faces[frame] for frame in sorted(faces)] for index, faces in faces.items()}
+    return {index: _interpolate_faces([faces[frame] for frame in sorted(faces)]) for index, faces in faces.items()}
