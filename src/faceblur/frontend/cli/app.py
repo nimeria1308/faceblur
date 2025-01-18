@@ -18,7 +18,7 @@ OUTPUT_DEFAULT = "faceblur"
 
 def __process_video_frame(frame: av.VideoFrame):
     img = frame.to_image()
-    img = img.filter(ImageFilter.BoxBlur(64))
+    img = img.filter(ImageFilter.EDGE_ENHANCE())
     new_frame = av.VideoFrame.from_image(img)
     new_frame.time_base = frame.time_base
     new_frame.dts = frame.dts
