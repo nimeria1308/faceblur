@@ -16,6 +16,10 @@ class Stream():
     def type(self):
         return self._stream.type
 
+    @property
+    def index(self):
+        return self._stream.index
+
 
 class InputStream(Stream):
     pass
