@@ -57,7 +57,7 @@ class Container():
 class InputContainer(Container):
     _container: av.container.InputContainer
 
-    def __init__(self, filename: str, thread_type: str = None):
+    def __init__(self, filename: str, thread_type: str = None, thread_count: int = None):
         super().__init__(av.open(filename, metadata_errors="ignore"))
 
         self._info = pymediainfo.MediaInfo.parse(filename)
@@ -67,6 +67,10 @@ class InputContainer(Container):
         if thread_type is not None:
             for stream in self._container.streams.video:
                 stream.thread_type = thread_type
+
+        if thread_count is not None:
+            for stream in self._container.streams.video:
+                stream.thread_count = thread_count
 
         # Create dummy input streams for all non-video streams
         self._streams = {stream: InputStream(stream) for stream in self._container.streams if stream.type != "video"}

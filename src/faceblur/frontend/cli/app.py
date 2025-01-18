@@ -69,10 +69,16 @@ def main():
                         Select a custom container format for video files.
                         If not speciefied it will use the same cotainer as each input.""")
 
-    parser.add_argument("--thread", "-t",
+    parser.add_argument("--thread_type", "-t",
                         choices=THREAD_TYPES,
                         default=THREAD_TYPE_DEFAULT,
                         help="PyAV decoder/encoder threading model")
+
+    parser.add_argument("--threads", "-j",
+                        default=os.cpu_count(), type=int,
+                        help=f"""
+                        How many threads to use for decoding/encoding video.
+                        Defaults to the number of logical cores: {os.cpu_count()}.""")
 
     args = parser.parse_args()
 
@@ -91,7 +97,7 @@ def main():
         for input_filename in progress:
             progress.set_description(desc=os.path.basename(input_filename))
             output_filename = __create_output(input_filename, args.output, args.format)
-            with InputContainer(input_filename, args.thread) as input_container:
+            with InputContainer(input_filename, args.thread_type, args.threads) as input_container:
                 with OutputContainer(output_filename, input_container) as output_container:
                     # Demux the packet from input
                     packet = input_container.demux()
