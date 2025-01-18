@@ -130,13 +130,13 @@ class OutputContainer(Container):
             # and creating a data stream without a codec only appears to work for .ts
         }
 
-        if template._stream.type not in STREAM_TYPES:
+        if template.type not in STREAM_TYPES:
             # Don't handle unsupported stream types
-            logging.getLogger(__name__).warning("Skipping unsupported stream type %s", template._stream.type)
+            logging.getLogger(__name__).warning("Skipping unsupported stream type %s", template.type)
             return None
 
         # create the stream wrapper
-        stream = STREAM_TYPES[template._stream.type](self._container, template)
+        stream = STREAM_TYPES[template.type](self._container, template)
 
         # add to mappings of input -> output streams
         self._streams[template] = stream

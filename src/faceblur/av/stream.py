@@ -12,6 +12,10 @@ class Stream():
     def __init__(self, stream: av.stream.Stream):
         self._stream = stream
 
+    @property
+    def type(self):
+        return self._stream.type
+
 
 class InputStream(Stream):
     pass
@@ -29,7 +33,7 @@ class OutputStream(Stream):
 
 class CopyOutputStream(OutputStream):
     def __init__(self, output_container: av.container.OutputContainer, input_stream: InputStream = None):
-        if input_stream._stream.type == "data":
+        if input_stream.type == "data":
             # DataStream.name is 'the codec'
             output_stream = output_container.add_data_stream(input_stream._stream.name)
         else:
