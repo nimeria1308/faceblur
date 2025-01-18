@@ -27,6 +27,25 @@ def __check_codec(codec):
 ENCODERS = sorted([codec for codec in av.codecs_available if __check_codec(codec)])
 
 
+def _get_angle360(angle: float):
+    # Make sure the angle is in 0..360
+    # See get_rotation() in fftools/cmdutils.c
+    return angle - 360 * int(angle/360 + 0.9/360)
+
+
+def _dimensions_for_rotated(width: int, height: int, rotation: float):
+    angle = _get_angle360(rotation)
+
+    if abs(angle - 90) < 1:
+        # Rotated by 90
+        return height, width
+    elif abs(angle - 270) < 1:
+        # Rotated by 270
+        return height, width
+    else:
+        return width, height
+
+
 class InputVideoStream(InputStream):
     _info: pymediainfo.Track
 
@@ -92,8 +111,14 @@ class OutputVideoStream(OutputStream):
             if value is not None:
                 setattr(output_stream.codec_context, p, value)
 
-        # Get rotation from stream side data
+        # Get rotation from stream side data and fix the resolutions
         rotation = float(input_stream.info.get("rotation", 0))
+        if rotation:
+            c_in = input_stream._stream.codec_context
+            c_out = output_stream.codec_context
+            width, height = _dimensions_for_rotated(c_in.width, c_in.height, rotation)
+            c_out.width = width
+            c_out.height = height
 
         super().__init__(output_stream, input_stream)
 
