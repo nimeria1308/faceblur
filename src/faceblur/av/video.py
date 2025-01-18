@@ -53,6 +53,19 @@ class InputVideoStream(InputStream):
         super().__init__(stream)
         self._info = info
 
+        # Get rotation from stream side data and fix the resolutions
+        rotation = float(info.get("rotation", 0))
+        cc = stream.codec_context
+        self._width, self._height = _dimensions_for_rotated(cc.width, cc.height, rotation)
+
+    @property
+    def width(self):
+        return self._width
+
+    @property
+    def height(self):
+        return self._height
+
     @property
     def info(self):
         return self._info
@@ -89,8 +102,7 @@ class OutputVideoStream(OutputStream):
 
             # Video
             "pix_fmt",
-            "width",
-            "height",
+            # do not read width/height directly from the codec context
             # "field_order", # N/A
 
             "color_range",
@@ -111,14 +123,10 @@ class OutputVideoStream(OutputStream):
             if value is not None:
                 setattr(output_stream.codec_context, p, value)
 
-        # Get rotation from stream side data and fix the resolutions
-        rotation = float(input_stream.info.get("rotation", 0))
-        if rotation:
-            c_in = input_stream._stream.codec_context
-            c_out = output_stream.codec_context
-            width, height = _dimensions_for_rotated(c_in.width, c_in.height, rotation)
-            c_out.width = width
-            c_out.height = height
+        # Get the dimensions from the InputStream not from CodecContext,
+        # in order to take any rotation into account
+        output_stream.codec_context.width = input_stream.width
+        output_stream.codec_context.height = input_stream.height
 
         super().__init__(output_stream, input_stream)
 
