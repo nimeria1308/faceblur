@@ -27,13 +27,14 @@ def identify_faces_from_image(image: Image, max_side=MAX_IMAGE_SIDE):
     return face_recognition.face_locations(np.array(image))
 
 
+def _process_frame(image, index, frame, max_side):
+    return index, frame, identify_faces_from_image(image, max_side)
+
+
 def identify_faces_from_video(container: InputContainer, threads=os.cpu_count(), max_side=MAX_IMAGE_SIDE):
     faces = {stream.index: {} for stream in container.streams if stream.type == "video"}
     frames = {index: 0 for index in faces.keys()}
     futures = set()
-
-    def _process_frame(image, index, frame):
-        return index, frame, identify_faces_from_image(image, max_side)
 
     def _process_done(done: set[cf.Future]):
         for future in done:
@@ -44,7 +45,7 @@ def identify_faces_from_video(container: InputContainer, threads=os.cpu_count(),
         nonlocal futures
         futures -= done
 
-    with cf.ThreadPoolExecutor(max_workers=threads) as executor:
+    with cf.ProcessPoolExecutor(max_workers=threads) as executor:
         for packet in container.demux():
             if packet.stream.type == "video":
                 # list with faces for each frame for this video stream
@@ -57,7 +58,11 @@ def identify_faces_from_video(container: InputContainer, threads=os.cpu_count(),
                         _process_done(cf.wait(futures, return_when=cf.FIRST_COMPLETED).done)
 
                     # find the faces in this frame
-                    futures.add(executor.submit(_process_frame, frame.to_image(), packet.stream.index, current_frame))
+                    futures.add(
+                        executor.submit(
+                            _process_frame,
+                            frame.to_image(),
+                            packet.stream.index, current_frame, max_side))
 
                     # stream_faces[current_frame] = faces_in_frame
                     current_frame += 1
