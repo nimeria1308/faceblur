@@ -30,6 +30,10 @@ class OutputStream(Stream):
         super().__init__(output_stream)
         self._input_stream = input_stream
 
+    @property
+    def input(self):
+        return self._input_stream
+
     def process(self, packet: av.Packet, frame_callback=None):
         # Do nothing by default
         pass
