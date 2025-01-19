@@ -140,7 +140,7 @@ class OutputContainer(Container):
 
         if template.type not in STREAM_TYPES:
             # Don't handle unsupported stream types
-            logging.getLogger(__name__).warning("Skipping unsupported stream type %s", template.type)
+            logging.getLogger(__name__).debug("Skipping unsupported stream type %s", template.type)
             return None
 
         # create the stream wrapper
