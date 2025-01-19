@@ -55,6 +55,13 @@ def main():
                         Select a custom video encoder.
                         If not speciefied it will use the same codecs as in the input videos""")
 
+    parser.add_argument("--strength", "-s",
+                        default=1.0, type=float,
+                        help=f"""
+                        Specify the strength of the deidentification.
+                        It is a multiplier, so 0..1 makes them more recognisable,
+                        while 1+ makes the less so.""")
+
     parser.add_argument("--format", "-f",
                         choices=sorted(list(CONTAINER_FORMATS.keys())),
                         help="""
@@ -108,7 +115,7 @@ def main():
                     image = frame.to_image()
 
                     # De-identify
-                    image = blur_faces(image, faces_in_frame)
+                    image = blur_faces(image, faces_in_frame, args.strength)
 
                     # PIL.Image -> av.video.frame.VideoFrame
                     new_frame = av.VideoFrame.from_image(image)
