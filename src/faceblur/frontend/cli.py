@@ -38,7 +38,7 @@ def main():
                         Select a custom container format for video files.
                         If not speciefied it will use the same cotainer as each input.""")
 
-    parser.add_argument("--encoder", "-e", choices=ENCODERS,
+    parser.add_argument("--video-encoder", "-v", choices=ENCODERS,
                         help="""
                         Select a custom video encoder.
                         If not speciefied it will use the same codecs as in the input videos""")

@@ -83,7 +83,7 @@ def faceblur(
         output,
         strength=1.0,
         format=None,
-        encoder=None,
+        video_encoder=None,
         progress_type=tqdm.tqdm,
         thread_type=THREAD_TYPE_DEFAULT,
         threads=os.cpu_count()):
@@ -104,7 +104,7 @@ def faceblur(
 
             output_filename = _create_output(input_filename, output, format)
             with InputContainer(input_filename, thread_type, threads) as input_container:
-                with OutputContainer(output_filename, input_container, encoder) as output_container:
+                with OutputContainer(output_filename, input_container, video_encoder) as output_container:
                     with progress_type(desc="Encoding", total=input_container.video.frames, unit=" frames", leave=False) as progress:
                         # Demux the packet from input
                         for packet in input_container.demux():
