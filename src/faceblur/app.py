@@ -16,6 +16,41 @@ from faceblur.faces.deidentify import blur_faces
 DEFAULT_OUT = "_deident"
 
 
+def _get_filenames_file(filename):
+    _, ext = os.path.splitext(filename)
+    if ext[1:].lower() not in CONTAINER_EXENTSIONS:
+        logging.getLogger(__name__).warning(f"Skipping unsupported file type: {os.path.basename(filename)}")
+        return set()
+
+    return set([filename])
+
+
+def _get_filenames_dir(dirname):
+    results = set()
+
+    for root, dirs, files in os.walk(dirname, topdown=False):
+        for name in files:
+            results.update(_get_filenames_file(os.path.join(root, name)))
+        for name in dirs:
+            results.update(_get_filenames_dir(os.path.join(root, name)))
+
+    return results
+
+
+def _get_filenames(inputs):
+    filenames = set()
+
+    for i in inputs:
+        if os.path.isdir(i):
+            filenames.update(_get_filenames_dir(i))
+        elif os.path.isfile(i):
+            filenames.update(_get_filenames_file(i))
+        else:
+            logging.getLogger(__name__).warning(f"Invalid path: {i}")
+
+    return sorted(list(filenames))
+
+
 def _create_output(filename, output, format=None):
     # Create the output directory
     os.makedirs(output, exist_ok=True)
@@ -53,19 +88,9 @@ def faceblur(
         thread_type=THREAD_TYPE_DEFAULT,
         threads=os.cpu_count()):
 
-    # TODO: Support directories
-    filenames = []
-    for filename in inputs:
-        _, ext = os.path.splitext(filename)
-        if ext[1:].lower() not in CONTAINER_EXENTSIONS:
-            logging.getLogger(__name__).warning(f"Skipping unsupported file type : {os.path.basename(filename)}")
-            continue
-
-        filenames.append(filename)
-
     # Start processing them one by one
-    with progress_type(filenames, unit="file(s)") as progress:
-        for input_filename in inputs:
+    with progress_type(_get_filenames(inputs), unit="file(s)") as progress:
+        for input_filename in progress:
             progress.set_description(desc=os.path.basename(input_filename))
 
             # First find the faces. We can't do that on a frame-by-frame basis as it requires
