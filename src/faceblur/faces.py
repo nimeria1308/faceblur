@@ -24,7 +24,16 @@ def identify_faces_from_image(image: Image, max_side=MAX_IMAGE_SIDE):
         # Needs to be scaled down
         image = image.resize((image.width // divisor, image.height // divisor))
 
-    return face_recognition.face_locations(np.array(image))
+    faces = face_recognition.face_locations(np.array(image))
+
+    # Adjust faces if the image was scaled down
+    if divisor > 1:
+        faces = [
+            tuple(point * divisor for point in face)
+            for face in faces
+        ]
+
+    return faces
 
 
 def _interpolate_faces(faces):
