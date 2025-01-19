@@ -7,7 +7,9 @@ import pymediainfo
 
 from faceblur.av.stream import InputStream, OutputStream
 from faceblur.av.filter import Filter, Graph
+from faceblur.av.frame import Frame
 from faceblur.av.packet import Packet
+from PIL.Image import Image
 
 THREAD_TYPES = [
     "SLICE",
@@ -113,6 +115,18 @@ class InputVideoStream(InputStream):
         return self._stream.frames
 
 
+class VideoFrame(Frame):
+    def to_image(self) -> Image:
+        return self._frame.to_image()
+
+    @staticmethod
+    def from_image(image: Image, frame: Frame):
+        new_frame = av.VideoFrame.from_image(image)
+        new_frame = Frame(new_frame)
+        new_frame.copy_metadata(frame)
+        return new_frame
+
+
 class VideoPacket(Packet):
     _stream: InputVideoStream
 
@@ -121,7 +135,7 @@ class VideoPacket(Packet):
             if self._stream._graph:
                 self._stream._graph.push(frame)
                 frame = self._stream._graph.pull()
-            yield frame
+            yield VideoFrame(frame, self.stream)
 
 
 class OutputVideoStream(OutputStream):
@@ -187,19 +201,14 @@ class OutputVideoStream(OutputStream):
 
         super().__init__(output_stream, input_stream)
 
-    def process(self, packet: av.Packet, frame_callback=None):
-        for frame in packet.decode():
-            if frame_callback:
-                # Process frame
-                frame = frame_callback(frame, self)
-
-            # now encode
-            for packet_output in self._stream.encode(frame):
+    def process(self, frame: VideoFrame):
+        if frame:
+            # Encode
+            for packet_output in self._stream.encode(frame._frame):
                 self._stream.container.mux(packet_output)
-
-        if packet.dts is None:
+        else:
             # Flush the encoder.
-            # Note that the "empty" packet MUST fist be passed to the
+            # Note that the "empty" packet MUST first be passed to the
             # encoder to signal flushing
             while True:
                 try:

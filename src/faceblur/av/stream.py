@@ -30,11 +30,7 @@ class OutputStream(Stream):
         super().__init__(output_stream)
         self._input_stream = input_stream
 
-    @property
-    def input(self):
-        return self._input_stream
-
-    def process(self, packet: av.Packet, frame_callback=None):
+    def process(self, packet):
         # Do nothing by default
         pass
 
@@ -49,7 +45,7 @@ class CopyOutputStream(OutputStream):
 
         super().__init__(output_stream, input_stream)
 
-    def process(self, packet: av.Packet, frame_callback=None):
+    def process(self, packet):
         # Simply copy the packet, i.e. remux
 
         # We need to skip the "flushing" packets that `demux` generates.

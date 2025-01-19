@@ -8,8 +8,8 @@ import tqdm
 from faceblur.av.container import EXTENSIONS as CONTAINER_EXENTSIONS
 from faceblur.av.container import FORMATS as CONTAINER_FORMATS
 from faceblur.av.container import InputContainer, OutputContainer
-from faceblur.av.stream import OutputStream
 from faceblur.av.video import ENCODERS, THREAD_TYPES, THREAD_TYPE_DEFAULT
+from faceblur.av.video import VideoFrame
 from faceblur.faces.identify import identify_faces_from_video
 from faceblur.faces.deidentify import blur_faces
 
@@ -32,6 +32,21 @@ def __create_output(filename, output=None, format=None):
         filename = f"{filename}.{ext}"
 
     return os.path.join(output, os.path.basename(filename))
+
+
+def __process_video_frame(frame: VideoFrame, faces, strength):
+    # do extra processing only if any faces were found
+    if faces:
+        # av.video.frame.VideoFrame -> PIL.Image
+        image = frame.to_image()
+
+        # De-identify
+        image = blur_faces(image, faces, strength)
+
+        # PIL.Image -> av.video.frame.VideoFrame
+        frame = VideoFrame.from_image(image, frame)
+
+    return frame
 
 
 def main():
@@ -105,35 +120,27 @@ def main():
             for frames in faces.values():
                 frames.reverse()
 
-            def __process_video_frame(frame: av.VideoFrame, stream: OutputStream):
-                # Get the list of faces for this stream and frame
-                faces_in_frame = faces[stream.input.index].pop()
-
-                # do extra processing only if any faces were found
-                if faces_in_frame:
-                    # av.video.frame.VideoFrame -> PIL.Image
-                    image = frame.to_image()
-
-                    # De-identify
-                    image = blur_faces(image, faces_in_frame, args.strength)
-
-                    # PIL.Image -> av.video.frame.VideoFrame
-                    new_frame = av.VideoFrame.from_image(image)
-                    new_frame.time_base = frame.time_base
-                    new_frame.dts = frame.dts
-                    new_frame.pts = frame.pts
-                    frame = new_frame
-
-                return frame
-
             output_filename = __create_output(input_filename, args.output, args.format)
             with InputContainer(input_filename, args.thread_type, args.threads) as input_container:
                 with OutputContainer(output_filename, input_container) as output_container:
-                    # Demux the packet from input
-                    packet = input_container.demux()
+                    with tqdm.tqdm(desc="Encoding", total=input_container.video.frames, unit="frames", leave=False) as progress:
+                        # Demux the packet from input
+                        for packet in input_container.demux():
+                            if packet.stream.type == "video":
+                                for frame in packet.decode():
+                                    # Get the list of faces for this stream and frame
+                                    faces_in_frame = faces[frame.stream.index].pop()
 
-                    # Put into output (if demuxed)
-                    output_container.mux(packet, __process_video_frame)
+                                    # Process (if necessary)
+                                    frame = __process_video_frame(frame, faces_in_frame, args.strength)
+
+                                    # Encode + mux
+                                    output_container.mux(frame)
+                                    progress.update()
+                            else:
+                                # remux directly
+                                output_container.mux(packet)
+                                progress.update()
 
 
 if __name__ == "__main__":
