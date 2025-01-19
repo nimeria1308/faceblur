@@ -64,7 +64,7 @@ def identify_faces_from_video(
         nonlocal futures
         futures -= done
 
-    with progress(desc="Detecting faces", total=container.video.frames, unit="frames", leave=False) as progress:
+    with progress(desc="Detecting faces", total=container.video.frames, unit=" frames", leave=False) as progress:
         with cf.ProcessPoolExecutor(max_workers=threads) as executor:
             for packet in container.demux():
                 if packet.stream.type == "video":
