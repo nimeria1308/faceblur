@@ -56,6 +56,7 @@ class Container():
 
 class InputContainer(Container):
     _container: av.container.InputContainer
+    _video: InputVideoStream
 
     def __init__(self, filename: str, thread_type: str = None, thread_count: int = None):
         super().__init__(av.open(filename, metadata_errors="ignore"))
@@ -94,6 +95,12 @@ class InputContainer(Container):
                 InputVideoStream(
                     stream, vars(tracks[stream.id if self._container.format.show_ids else stream.index + 1]))
                 for stream in self._container.streams.video})
+
+        self._video = self._streams[self._container.streams.video[0]]
+
+    @property
+    def video(self):
+        return self._video
 
     @property
     def streams(self):

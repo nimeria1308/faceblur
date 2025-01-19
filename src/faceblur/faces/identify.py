@@ -5,6 +5,7 @@ import face_recognition
 import math
 import numpy as np
 import os
+import tqdm
 
 from faceblur.av.container import InputContainer
 from PIL.Image import Image
@@ -48,7 +49,7 @@ def _process_frame(image, index, frame, image_size, fast):
 
 def identify_faces_from_video(
         container: InputContainer, threads=os.cpu_count(),
-        image_size=IDENTIFY_IMAGE_SIZE, fast=True):
+        image_size=IDENTIFY_IMAGE_SIZE, fast=True, progress=tqdm.tqdm):
 
     faces = {stream.index: {} for stream in container.streams if stream.type == "video"}
     frames = {index: 0 for index in faces.keys()}
@@ -63,31 +64,35 @@ def identify_faces_from_video(
         nonlocal futures
         futures -= done
 
-    with cf.ProcessPoolExecutor(max_workers=threads) as executor:
-        for packet in container.demux():
-            if packet.stream.type == "video":
-                # list with faces for each frame for this video stream
-                current_frame = frames[packet.stream.index]
+    with progress(desc="Detecting faces", total=container.video.frames, unit="frames", leave=False) as progress:
+        with cf.ProcessPoolExecutor(max_workers=threads) as executor:
+            for packet in container.demux():
+                if packet.stream.type == "video":
+                    # list with faces for each frame for this video stream
+                    current_frame = frames[packet.stream.index]
 
-                for frame in packet.decode():
-                    # Do not pile up more work until there are enough free workers
-                    while len(futures) >= threads:
-                        # wait for one
-                        _process_done(cf.wait(futures, return_when=cf.FIRST_COMPLETED).done)
+                    for frame in packet.decode():
+                        # Do not pile up more work until there are enough free workers
+                        while len(futures) >= threads:
+                            # wait for one
+                            _process_done(cf.wait(futures, return_when=cf.FIRST_COMPLETED).done)
 
-                    # find the faces in this frame
-                    futures.add(
-                        executor.submit(
-                            _process_frame,
-                            frame.to_image(),
-                            packet.stream.index, current_frame, image_size, fast))
+                        if packet.stream == container.video:
+                            progress.update()
 
-                    # stream_faces[current_frame] = faces_in_frame
-                    current_frame += 1
+                        # find the faces in this frame
+                        futures.add(
+                            executor.submit(
+                                _process_frame,
+                                frame.to_image(),
+                                packet.stream.index, current_frame, image_size, fast))
 
-                # update the lastly processed frame
-                frames[packet.stream.index] = current_frame
+                        # stream_faces[current_frame] = faces_in_frame
+                        current_frame += 1
 
-        _process_done(futures)
+                    # update the lastly processed frame
+                    frames[packet.stream.index] = current_frame
+
+            _process_done(futures)
 
     return {index: _interpolate_faces([faces[frame] for frame in sorted(faces)]) for index, faces in faces.items()}

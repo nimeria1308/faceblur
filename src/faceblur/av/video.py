@@ -108,6 +108,10 @@ class InputVideoStream(InputStream):
     def info(self):
         return self._info
 
+    @property
+    def frames(self):
+        return self._stream.frames
+
 
 class VideoPacket(Packet):
     _stream: InputVideoStream
