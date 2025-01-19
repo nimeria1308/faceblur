@@ -36,7 +36,7 @@ class OutputStream(Stream):
 
 
 class CopyOutputStream(OutputStream):
-    def __init__(self, output_container: av.container.OutputContainer, input_stream: InputStream = None):
+    def __init__(self, output_container: av.container.OutputContainer, input_stream: InputStream = None, encoder=None):
         if input_stream.type == "data":
             # DataStream.name is 'the codec'
             output_stream = output_container.add_data_stream(input_stream._stream.name)

@@ -119,7 +119,7 @@ class OutputContainer(Container):
     _container: av.container.OutputContainer
     _streams: dict[InputStream, OutputStream]
 
-    def __init__(self, filename: str, template: InputContainer = None):
+    def __init__(self, filename: str, template: InputContainer = None, encoder=None):
         super().__init__(av.open(filename, "w"))
 
         self._streams = {}
@@ -127,9 +127,9 @@ class OutputContainer(Container):
         if template:
             # Create output streams matching the input ones
             for stream in template._streams.values():
-                self.add_stream_from_template(stream)
+                self.add_stream_from_template(stream, encoder)
 
-    def add_stream_from_template(self, template: InputStream):
+    def add_stream_from_template(self, template: InputStream, encoder=None):
         STREAM_TYPES = {
             "audio": CopyOutputStream,
             "video": OutputVideoStream,
@@ -144,7 +144,7 @@ class OutputContainer(Container):
             return None
 
         # create the stream wrapper
-        stream = STREAM_TYPES[template.type](self._container, template)
+        stream = STREAM_TYPES[template.type](self._container, template, encoder)
 
         # add to mappings of input -> output streams
         self._streams[template] = stream
