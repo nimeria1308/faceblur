@@ -10,8 +10,8 @@ from faceblur.av.container import FORMATS as CONTAINER_FORMATS
 from faceblur.av.container import InputContainer, OutputContainer
 from faceblur.av.stream import OutputStream
 from faceblur.av.video import ENCODERS, THREAD_TYPES, THREAD_TYPE_DEFAULT
-from faceblur.faces import identify_faces_from_video
-from faceblur.faces import blur_faces
+from faceblur.faces.identify import identify_faces_from_video
+from faceblur.faces.deidentify import blur_faces
 
 av.logging.set_level(av.logging.ERROR)
 
