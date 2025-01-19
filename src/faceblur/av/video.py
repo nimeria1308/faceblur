@@ -202,7 +202,7 @@ class OutputVideoStream(OutputStream):
         super().__init__(output_stream, input_stream)
 
     def process(self, frame: VideoFrame):
-        if frame:
+        if frame.dts is not None:
             # Encode
             for packet_output in self._stream.encode(frame._frame):
                 self._stream.container.mux(packet_output)

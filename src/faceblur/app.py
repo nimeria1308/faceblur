@@ -94,6 +94,10 @@ def faceblur(
                                     # Encode + mux
                                     output_container.mux(frame)
                                     progress.update()
+
+                                if packet.dts is None:
+                                    # Flush encoder
+                                    output_container.mux(packet)
                             else:
                                 # remux directly
                                 output_container.mux(packet)
