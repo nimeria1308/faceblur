@@ -10,7 +10,7 @@ from faceblur.av.container import InputContainer
 from PIL.Image import Image
 
 
-MAX_IMAGE_SIDE = 1920
+IDENTIFY_IMAGE_SIZE = 1920
 
 
 def _find_divisor(width, height, max_side):
@@ -18,13 +18,13 @@ def _find_divisor(width, height, max_side):
     return math.ceil(side / max_side)
 
 
-def identify_faces_from_image(image: Image, max_side=MAX_IMAGE_SIDE):
-    divisor = _find_divisor(image.width, image.height, max_side)
+def identify_faces_from_image(image: Image, image_size=IDENTIFY_IMAGE_SIZE, fast=True):
+    divisor = _find_divisor(image.width, image.height, image_size)
     if divisor > 1:
         # Needs to be scaled down
         image = image.resize((image.width // divisor, image.height // divisor))
 
-    faces = face_recognition.face_locations(np.array(image))
+    faces = face_recognition.face_locations(np.array(image), model="hog" if fast else "cnn")
 
     # Adjust faces if the image was scaled down
     if divisor > 1:
@@ -42,11 +42,14 @@ def _interpolate_faces(faces):
     return faces
 
 
-def _process_frame(image, index, frame, max_side):
-    return index, frame, identify_faces_from_image(image, max_side)
+def _process_frame(image, index, frame, image_size, fast):
+    return index, frame, identify_faces_from_image(image, image_size, fast)
 
 
-def identify_faces_from_video(container: InputContainer, threads=os.cpu_count(), max_side=MAX_IMAGE_SIDE):
+def identify_faces_from_video(
+        container: InputContainer, threads=os.cpu_count(),
+        image_size=IDENTIFY_IMAGE_SIZE, fast=True):
+
     faces = {stream.index: {} for stream in container.streams if stream.type == "video"}
     frames = {index: 0 for index in faces.keys()}
     futures = set()
@@ -77,7 +80,7 @@ def identify_faces_from_video(container: InputContainer, threads=os.cpu_count(),
                         executor.submit(
                             _process_frame,
                             frame.to_image(),
-                            packet.stream.index, current_frame, max_side))
+                            packet.stream.index, current_frame, image_size, fast))
 
                     # stream_faces[current_frame] = faces_in_frame
                     current_frame += 1
