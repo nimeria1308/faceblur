@@ -8,22 +8,14 @@ import tqdm
 from faceblur.av.container import EXTENSIONS as CONTAINER_EXENTSIONS
 from faceblur.av.container import FORMATS as CONTAINER_FORMATS
 from faceblur.av.container import InputContainer, OutputContainer
+from faceblur.av.stream import OutputStream
 from faceblur.av.video import ENCODERS, THREAD_TYPES, THREAD_TYPE_DEFAULT
-from PIL import ImageFilter
+from faceblur.faces import identify_faces_from_video
+from faceblur.faces import blur_faces
 
 av.logging.set_level(av.logging.ERROR)
 
 OUTPUT_DEFAULT = "faceblur"
-
-
-def __process_video_frame(frame: av.VideoFrame):
-    img = frame.to_image()
-    img = img.filter(ImageFilter.EDGE_ENHANCE())
-    new_frame = av.VideoFrame.from_image(img)
-    new_frame.time_base = frame.time_base
-    new_frame.dts = frame.dts
-    new_frame.pts = frame.pts
-    return new_frame
 
 
 def __create_output(filename, output=None, format=None):
@@ -96,6 +88,37 @@ def main():
     with tqdm.tqdm(filenames, unit="file(s)") as progress:
         for input_filename in progress:
             progress.set_description(desc=os.path.basename(input_filename))
+
+            # First find the faces. We can't do that on a frame-by-frame basis as it requires
+            # to have the full data to interpolate missing face locations
+            with InputContainer(input_filename, args.thread_type, args.threads) as input_container:
+                faces = identify_faces_from_video(input_container, args.threads)
+
+            # let's reverse the lists so that we would be popping elements, rather than read + delete
+            for frames in faces.values():
+                frames.reverse()
+
+            def __process_video_frame(frame: av.VideoFrame, stream: OutputStream):
+                # Get the list of faces for this stream and frame
+                faces_in_frame = faces[stream.input.index].pop()
+
+                # do extra processing only if any faces were found
+                if faces_in_frame:
+                    # av.video.frame.VideoFrame -> PIL.Image
+                    image = frame.to_image()
+
+                    # De-identify
+                    image = blur_faces(image, faces_in_frame)
+
+                    # PIL.Image -> av.video.frame.VideoFrame
+                    new_frame = av.VideoFrame.from_image(image)
+                    new_frame.time_base = frame.time_base
+                    new_frame.dts = frame.dts
+                    new_frame.pts = frame.pts
+                    frame = new_frame
+
+                return frame
+
             output_filename = __create_output(input_filename, args.output, args.format)
             with InputContainer(input_filename, args.thread_type, args.threads) as input_container:
                 with OutputContainer(output_filename, input_container) as output_container:

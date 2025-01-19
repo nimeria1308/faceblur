@@ -187,7 +187,7 @@ class OutputVideoStream(OutputStream):
         for frame in packet.decode():
             if frame_callback:
                 # Process frame
-                frame = frame_callback(frame)
+                frame = frame_callback(frame, self)
 
             # now encode
             for packet_output in self._stream.encode(frame):
