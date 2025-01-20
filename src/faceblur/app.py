@@ -152,12 +152,14 @@ def _faceblur_video(
                         else:
                             # remux directly
                             output_container.mux(packet)
-    finally:
+    except Exception as e:
         # Error/Stop request while encoding, make sure to remove the output
         try:
             os.remove(output_filename)
         except:
             pass
+
+        raise e
 
 
 def faceblur(
