@@ -280,3 +280,13 @@ def identify_faces_from_video(container: InputContainer,
 
     # Convert the coords to something meaningful
     return {index: _interpolate_faces(faces, tracking_frame_distance, tracking_confidence) for index, faces in faces.items()}
+
+
+def identify_faces_from_image(image: Image,
+                              detection_confidence=0.5,
+                              merge_confidence=0.25,
+                              image_size=IDENTIFY_IMAGE_SIZE):
+
+    with FaceDetection(model_selection=0, min_detection_confidence=detection_confidence) as detection_close:
+        with FaceDetection(model_selection=1, min_detection_confidence=detection_confidence) as detection_far:
+            return _identify_faces_from_image(image, detection_close, detection_far, merge_confidence, image_size)
