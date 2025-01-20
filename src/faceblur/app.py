@@ -96,7 +96,7 @@ def faceblur(
             # First find the faces. We can't do that on a frame-by-frame basis as it requires
             # to have the full data to interpolate missing face locations
             with InputContainer(input_filename, thread_type, threads) as input_container:
-                faces = identify_faces_from_video(input_container, threads, progress=progress_type)
+                faces = identify_faces_from_video(input_container, progress=progress_type)
 
             # let's reverse the lists so that we would be popping elements, rather than read + delete
             for frames in faces.values():
