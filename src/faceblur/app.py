@@ -23,43 +23,43 @@ DEFAULT_OUT = "_deident"
 SUPPORTED_EXTENSIONS = set(CONTAINER_EXENTSIONS + IMAGE_EXTENSIONS)
 
 
-def _is_from_group(filename, group):
+def is_filename_from_ext_group(filename, group):
     _, ext = os.path.splitext(filename)
     return ext[1:].lower() in group
 
 
-def _get_filenames_file(filename):
-    if not _is_from_group(filename, SUPPORTED_EXTENSIONS):
-        logging.getLogger(__name__).warning(f"Skipping unsupported file type: {os.path.basename(filename)}")
+def _get_filenames_file(filename, on_error):
+    if not is_filename_from_ext_group(filename, SUPPORTED_EXTENSIONS):
+        on_error(f"Skipping unsupported file type: {os.path.basename(filename)}")
         return set()
 
     return set([filename])
 
 
-def _get_filenames_dir(dirname):
+def _get_filenames_dir(dirname, on_error):
     results = set()
 
     for root, dirs, files in os.walk(dirname, topdown=False):
         for name in files:
-            results.update(_get_filenames_file(os.path.join(root, name)))
+            results.update(_get_filenames_file(os.path.join(root, name), on_error))
         for name in dirs:
-            results.update(_get_filenames_dir(os.path.join(root, name)))
+            results.update(_get_filenames_dir(os.path.join(root, name), on_error))
 
     return results
 
 
-def _get_filenames(inputs):
+def get_supported_filenames(inputs, on_error=logging.getLogger(__name__).warning):
     filenames = set()
 
     for i in inputs:
         if os.path.isdir(i):
-            filenames.update(_get_filenames_dir(i))
+            filenames.update(_get_filenames_dir(i, on_error))
         elif os.path.isfile(i):
-            filenames.update(_get_filenames_file(i))
+            filenames.update(_get_filenames_file(i, on_error))
         else:
-            logging.getLogger(__name__).warning(f"Invalid path: {i}")
+            on_error(f"Invalid path: {i}")
 
-    return sorted(list(filenames))
+    return set(sorted(list(filenames)))
 
 
 def _create_output(filename, output, format=None):
@@ -67,7 +67,7 @@ def _create_output(filename, output, format=None):
     os.makedirs(output, exist_ok=True)
 
     if format:
-        is_image = _is_from_group(filename, IMAGE_EXTENSIONS)
+        is_image = is_filename_from_ext_group(filename, IMAGE_EXTENSIONS)
         formats = IMAGE_FORMATS if is_image else CONTAINER_FORMATS
         filename, ext = os.path.splitext(filename)
         ext = formats[format][0]
@@ -160,11 +160,11 @@ def faceblur(
         threads=os.cpu_count()):
 
     # Start processing them one by one
-    with progress_type(_get_filenames(inputs), unit=" file(s)") as progress:
+    with progress_type(get_supported_filenames(inputs), unit=" file(s)") as progress:
         for input_filename in progress:
             progress.set_description(desc=os.path.basename(input_filename))
 
-            if _is_from_group(input_filename, IMAGE_EXTENSIONS):
+            if is_filename_from_ext_group(input_filename, IMAGE_EXTENSIONS):
                 # TODO handle images
                 _faceblur_image(input_filename, output, strength, image_format)
             else:

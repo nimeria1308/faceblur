@@ -1,6 +1,29 @@
 # Copyright (C) 2025, Simona Dimitrova
 
+import os
 import wx
+
+from faceblur.app import get_supported_filenames
+
+
+class Drop(wx.FileDropTarget):
+    def __init__(self, window):
+        super().__init__()
+        self._window = window
+
+    def OnDropFiles(self, x, y, filenames):
+        def on_error(message):
+            wx.MessageDialog(None, message, "Warning", wx.OK | wx.CENTER | wx.ICON_WARNING).ShowModal()
+        filenames = get_supported_filenames(filenames, on_error)
+
+        for filename in filenames:
+            filename = os.path.abspath(filename)
+
+            # Add only if not added by the user before
+            if filename not in self._window._file_list.GetItems():
+                self._window._file_list.Append(filename)
+
+        return True
 
 
 class MainWindow(wx.Frame):
@@ -13,6 +36,7 @@ class MainWindow(wx.Frame):
 
         # List of files on the left
         self._file_list = wx.ListBox(panel, style=wx.LB_EXTENDED)
+        self._file_list.Bind(wx.EVT_KEY_DOWN, self._list_on_key_down)
         main_sizer.Add(self._file_list, 1, wx.EXPAND | wx.ALL, 5)
 
         # Right panel
@@ -75,6 +99,9 @@ class MainWindow(wx.Frame):
         self._progress_bar1.SetValue(60)
         self._progress_bar2.SetValue(30)
 
+        # Support drag & drop
+        self.SetDropTarget(Drop(self))
+
         # Show the window
         self.Centre()
         self.Show()
@@ -93,6 +120,25 @@ class MainWindow(wx.Frame):
     def on_resize_statusbar(self, event):
         self.position_progress_bars()
         event.Skip()
+
+    def _list_on_key_down(self, event):
+        # Check for Ctrl+A (Select All)
+        if event.GetKeyCode() == ord('A') and event.ControlDown():
+            # Select all items (one by one)
+            for index in range(self._file_list.GetCount()):
+                self._file_list.SetSelection(index)
+
+        # Check if the Delete key is pressed
+        elif event.GetKeyCode() == wx.WXK_DELETE:
+            # Get a list of selected indices
+            selections = self._file_list.GetSelections()
+            if selections:
+                # Reverse the selection order to avoid index shifting issues
+                for index in reversed(selections):
+                    self._file_list.Delete(index)
+        else:
+            # Pass other key events to the list box
+            event.Skip()
 
 
 def main():
