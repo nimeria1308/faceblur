@@ -1,9 +1,12 @@
 # Copyright (C) 2025, Simona Dimitrova
 
 import os
+import threading
 import wx
 
 from faceblur.app import get_supported_filenames
+from faceblur.app import faceblur
+from faceblur.threading import TerminatingCookie
 
 
 class Drop(wx.FileDropTarget):
@@ -33,6 +36,9 @@ DEFAULT_CONFIDENCE = 0.5
 class MainWindow(wx.Frame):
     def __init__(self, parent, title):
         super().__init__(parent, title=title, size=(600, 400))
+
+        self._thread = None
+        self._cookie = None
 
         # Main panel and sizer
         panel = wx.Panel(self)
@@ -66,11 +72,20 @@ class MainWindow(wx.Frame):
         button_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self._reset_button = wx.Button(button_panel, label="Reset")
+        self._reset_button.Bind(wx.EVT_BUTTON, self._on_reset)
+
         self._start_button = wx.Button(button_panel, label="Start")
+        self._start_button.Bind(wx.EVT_BUTTON, self._on_start)
         self._start_button.SetDefault()
+
+        self._stop_button = wx.Button(button_panel, label="Stop")
+        self._stop_button.Bind(wx.EVT_BUTTON, self._on_stop)
+        self._stop_button.Enable(False)
+
         self._buttons = [
             self._reset_button,
             self._start_button,
+            self._stop_button,
         ]
 
         for button in self._buttons:
@@ -145,6 +160,79 @@ class MainWindow(wx.Frame):
         else:
             # Pass other key events to the list box
             event.Skip()
+
+    def _on_reset(self, event):
+        self._strength.SetValue(DEFAULT_STRENGTH)
+        self._confidence.SetValue(DEFAULT_CONFIDENCE)
+
+    def _remove_file(self, filename):
+        for index, f in enumerate(self._file_list.GetItems()):
+            if f == filename:
+                self._file_list.Delete(index)
+
+                # Assumes no duplicates in the list
+                break
+
+    def _set_enablements(self, stopped):
+        self._file_list.Enable(stopped)
+        self._strength.Enable(stopped)
+        self._confidence.Enable(stopped)
+        self._reset_button.Enable(stopped)
+        self._start_button.Enable(stopped)
+        self._stop_button.Enable(not stopped)
+
+    def _thread_done(self):
+        assert self._thread
+
+        self._thread.join()
+        self._cookie = None
+        self._thread = None
+
+        self._set_enablements(True)
+
+    def _on_done(self, filename):
+        if filename:
+            # 1 file has finished. Remove it from the list
+            wx.CallAfter(self._remove_file, filename)
+        else:
+            # All files have finished
+            wx.CallAfter(self._thread_done)
+
+    def _on_start(self, event):
+        assert not self._thread
+        assert not self._cookie
+
+        if not self._file_list.GetCount():
+            # Nothing to do
+            return
+
+        with wx.DirDialog(None, "Choose output folder", style=wx.DD_DEFAULT_STYLE) as dlg:
+            if dlg.ShowModal() == wx.ID_OK:
+                output = dlg.GetPath()
+            else:
+                # Did not select
+                return
+
+        self._cookie = TerminatingCookie()
+
+        kwargs = {
+            "inputs": self._file_list.GetItems(),
+            "output": output,
+            "strength": self._strength.GetValue(),
+            "confidence": self._confidence.GetValue(),
+            # "progress_type": None,
+            "on_done": self._on_done,
+            "stop": self._cookie,
+        }
+
+        self._set_enablements(False)
+
+        self._thread = threading.Thread(target=faceblur, kwargs=kwargs)
+        self._thread.start()
+
+    def _on_stop(self, event):
+        assert self._cookie
+        self._cookie.requestTermination()
 
 
 def main():

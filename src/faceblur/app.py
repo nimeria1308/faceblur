@@ -13,6 +13,7 @@ from faceblur.faces.identify import identify_faces_from_image, identify_faces_fr
 from faceblur.faces.deidentify import blur_faces
 from faceblur.image import EXTENSIONS as IMAGE_EXTENSIONS
 from faceblur.image import FORMATS as IMAGE_FORMATS
+from faceblur.threading import TerminatedException, TerminatingCookie
 
 from PIL import Image
 from pillow_heif import register_heif_opener
@@ -91,12 +92,12 @@ def _process_video_frame(frame: VideoFrame, faces, strength):
     return frame
 
 
-def _faceblur_image(input_filename, output, strength, format):
+def _faceblur_image(input_filename, output, strength, confidence, format):
     # Load
     image = Image.open(input_filename)
 
     # Find faces
-    faces = identify_faces_from_image(image)
+    faces = identify_faces_from_image(image, detection_confidence=confidence)
 
     # De-identify
     image = blur_faces(image, faces, strength)
@@ -108,66 +109,93 @@ def _faceblur_image(input_filename, output, strength, format):
 
 def _faceblur_video(
         input_filename, output,
-        strength,
+        strength, confidence,
         format, encoder,
         progress_type,
-        thread_type, threads):
+        thread_type, threads, stop):
 
     # First find the faces. We can't do that on a frame-by-frame basis as it requires
     # to have the full data to interpolate missing face locations
     with InputContainer(input_filename, thread_type, threads) as input_container:
-        faces = identify_faces_from_video(input_container, progress=progress_type)
+        faces = identify_faces_from_video(
+            input_container, detection_confidence=confidence, progress=progress_type, stop=stop)
 
     # let's reverse the lists so that we would be popping elements, rather than read + delete
     for frames in faces.values():
         frames.reverse()
 
     output_filename = _create_output(input_filename, output, format)
-    with InputContainer(input_filename, thread_type, threads) as input_container:
-        with OutputContainer(output_filename, input_container, encoder) as output_container:
-            with progress_type(desc="Encoding", total=input_container.video.frames, unit=" frames", leave=False) as progress:
-                # Demux the packet from input
-                for packet in input_container.demux():
-                    if packet.stream.type == "video":
-                        for frame in packet.decode():
-                            # Get the list of faces for this stream and frame
-                            faces_in_frame = faces[frame.stream.index].pop()
+    try:
+        with InputContainer(input_filename, thread_type, threads) as input_container:
+            with OutputContainer(output_filename, input_container, encoder) as output_container:
+                with progress_type(desc="Encoding", total=input_container.video.frames, unit=" frames", leave=False) as progress:
+                    # Demux the packet from input
+                    for packet in input_container.demux():
+                        if packet.stream.type == "video":
+                            for frame in packet.decode():
+                                if stop:
+                                    stop.throwIfTerminated()
 
-                            # Process (if necessary)
-                            frame = _process_video_frame(frame, faces_in_frame, strength)
+                                # Get the list of faces for this stream and frame
+                                faces_in_frame = faces[frame.stream.index].pop()
 
-                            # Encode + mux
-                            output_container.mux(frame)
-                            progress.update()
+                                # Process (if necessary)
+                                frame = _process_video_frame(frame, faces_in_frame, strength)
 
-                        if packet.dts is None:
-                            # Flush encoder
+                                # Encode + mux
+                                output_container.mux(frame)
+                                progress.update()
+
+                            if packet.dts is None:
+                                # Flush encoder
+                                output_container.mux(packet)
+                        else:
+                            # remux directly
                             output_container.mux(packet)
-                    else:
-                        # remux directly
-                        output_container.mux(packet)
+    finally:
+        # Error/Stop request while encoding, make sure to remove the output
+        try:
+            os.remove(output_filename)
+        except:
+            pass
 
 
 def faceblur(
         inputs,
         output,
         strength=1.0,
+        confidence=0.5,
         video_format=None,
         video_encoder=None,
         image_format=None,
         progress_type=tqdm.tqdm,
         thread_type=THREAD_TYPE_DEFAULT,
-        threads=os.cpu_count()):
+        threads=os.cpu_count(),
+        on_done=None,
+        stop: TerminatingCookie = None):
 
-    # Start processing them one by one
-    with progress_type(get_supported_filenames(inputs), unit=" file(s)") as progress:
-        for input_filename in progress:
-            progress.set_description(desc=os.path.basename(input_filename))
+    try:
+        # Start processing them one by one
+        with progress_type(get_supported_filenames(inputs), unit=" file(s)") as progress:
+            for input_filename in progress:
+                progress.set_description(desc=os.path.basename(input_filename))
 
-            if is_filename_from_ext_group(input_filename, IMAGE_EXTENSIONS):
-                # TODO handle images
-                _faceblur_image(input_filename, output, strength, image_format)
-            else:
-                # Assume video
-                _faceblur_video(input_filename, output, strength, format,
-                                video_encoder, progress_type, thread_type, threads)
+                if stop:
+                    stop.throwIfTerminated()
+
+                if is_filename_from_ext_group(input_filename, IMAGE_EXTENSIONS):
+                    # Handle images
+                    _faceblur_image(input_filename, output, strength, confidence, image_format)
+                else:
+                    # Assume video
+                    _faceblur_video(input_filename, output, strength, confidence, video_format,
+                                    video_encoder, progress_type, thread_type, threads, stop)
+
+                if on_done:
+                    on_done(input_filename)
+    except TerminatedException:
+        # No action neccessary
+        pass
+    finally:
+        if on_done:
+            on_done(None)

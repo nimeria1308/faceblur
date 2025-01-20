@@ -6,6 +6,7 @@ import os
 import tqdm
 
 from faceblur.av.container import InputContainer
+from faceblur.threading import TerminatingCookie
 from mediapipe.python.solutions.face_detection import FaceDetection
 from PIL.Image import Image
 
@@ -258,17 +259,20 @@ def identify_faces_from_video(container: InputContainer,
                               tracking_frame_distance=30,
                               tracking_confidence=0.05,
                               image_size=IDENTIFY_IMAGE_SIZE,
-                              progress=tqdm.tqdm):
+                              progress=tqdm.tqdm,
+                              stop: TerminatingCookie = None):
 
     faces = {stream.index: [] for stream in container.streams if stream.type == "video"}
 
     with FaceDetection(model_selection=0, min_detection_confidence=detection_confidence) as detection_close:
         with FaceDetection(model_selection=1, min_detection_confidence=detection_confidence) as detection_far:
             with progress(desc="Detecting faces", total=container.video.frames, unit=" frames", leave=False) as progress:
-                # TODO Use both models: 0 for selfies, 1 for moderate distance
                 for packet in container.demux():
                     if packet.stream.type == "video":
                         for frame in packet.decode():
+                            if stop:
+                                stop.throwIfTerminated()
+
                             image = frame.to_image()
                             detected_faces = _identify_faces_from_image(
                                 image, detection_close, detection_far, merge_confidence, image_size)
