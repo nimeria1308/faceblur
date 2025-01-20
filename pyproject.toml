@@ -1,0 +1,41 @@
+[build-system]
+requires      = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "faceblur"
+version = "1.0.0"
+description = "Faceblur is a Python library and command-line tool to obfuscate faces from photos and videos via blurring them."
+readme = "README.md"
+authors = [{ name = "Simona Dimitrova", email = "nimeria1308@gmail.com" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Science/Research",
+    "Topic :: Desktop Environment",
+    "Topic :: Multimedia :: Video :: Display",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
+keywords = ["colourspace", "colorspace", "video", "render"]
+dependencies = [
+    "av >= 14.0.1",
+    "pymediainfo >= 6.1.0",
+    "mediapipe >= 0.10.20",
+    "pillow >= 11.1.0",
+    "pillow_heif >= 0.21.0",
+    "tqdm >= 4.67.1",
+    "wxPython >= 4.2.2",
+]
+requires-python = ">=3.9"
+
+[project.optional-dependencies]
+dev = ["autopep8", "pytest"]
+
+[project.urls]
+Homepage = "https://github.com/nimeria1308/faceblur"
+
+[project.scripts]
+faceblur = "faceblur.frontend.cli:main"
+faceblurui = "faceblur.frontend.wx:main"
