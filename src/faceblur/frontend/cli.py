@@ -8,6 +8,7 @@ from faceblur.app import DEFAULT_OUT
 from faceblur.app import faceblur
 from faceblur.av.container import FORMATS as CONTAINER_FORMATS
 from faceblur.av.video import ENCODERS, THREAD_TYPES, THREAD_TYPE_DEFAULT
+from faceblur.image import FORMATS as IMAGE_FORMATS
 
 av.logging.set_level(av.logging.ERROR)
 
@@ -32,7 +33,7 @@ def main():
                         It is a multiplier, so 0..1 makes them more recognisable,
                         while 1+ makes the less so.""")
 
-    parser.add_argument("--format", "-f",
+    parser.add_argument("--video-format", "-f",
                         choices=sorted(list(CONTAINER_FORMATS.keys())),
                         help="""
                         Select a custom container format for video files.
@@ -42,6 +43,12 @@ def main():
                         help="""
                         Select a custom video encoder.
                         If not speciefied it will use the same codecs as in the input videos""")
+
+    parser.add_argument("--image-format", "-F",
+                        choices=sorted(list(IMAGE_FORMATS.keys())),
+                        help="""
+                        Select a custom format for image files.
+                        If not speciefied it will use the same format as each input.""")
 
     parser.add_argument("--thread_type", "-t",
                         choices=THREAD_TYPES,

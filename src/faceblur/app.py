@@ -152,8 +152,9 @@ def faceblur(
         inputs,
         output,
         strength=1.0,
-        format=None,
+        video_format=None,
         video_encoder=None,
+        image_format=None,
         progress_type=tqdm.tqdm,
         thread_type=THREAD_TYPE_DEFAULT,
         threads=os.cpu_count()):
@@ -165,7 +166,7 @@ def faceblur(
 
             if _is_from_group(input_filename, IMAGE_EXTENSIONS):
                 # TODO handle images
-                _faceblur_image(input_filename, output, strength, None)
+                _faceblur_image(input_filename, output, strength, image_format)
             else:
                 # Assume video
                 _faceblur_video(input_filename, output, strength, format,

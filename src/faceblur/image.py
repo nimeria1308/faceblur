@@ -1,15 +1,15 @@
 # Copyright (C) 2025, Simona Dimitrova
 
 FORMATS = {
-    "BMP": ["bmp"],
-    "PNG": ["png"],
-    "JPEG": [
-        "jfif",
-        "jpe",
+    "bmp": ["bmp"],
+    "png": ["png"],
+    "jpeg": [
         "jpg",
+        "jpe",
         "jpeg",
+        "jfif",
     ],
-    "JPEG2000": [
+    "jpeg2000": [
         "jp2",
         "j2k",
         "jpc",
@@ -17,23 +17,23 @@ FORMATS = {
         "jpx",
         "j2c",
     ],
-    "TIFF": [
+    "tiff": [
         "tif",
         "tiff",
     ],
-    "WEBP": ["webp"],
-    "HEIF": [  # pillow-heif
+    "webp": ["webp"],
+    "heif": [  # pillow-heif
         "heic",
         "heics",
         "heif",
         "heifs",
         "hif",
     ],
-    "TGA": ["tga"],
-    "PPM": [
+    "tga": ["tga"],
+    "ppm": [
+        "ppm",
         "pbm",
         "pgm",
-        "ppm",
         "pnm",
         "pfm",
     ],
