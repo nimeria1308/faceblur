@@ -18,7 +18,7 @@ classifiers = [
     "Topic :: Multimedia :: Video :: Display",
     "Topic :: Scientific/Engineering :: Image Processing",
 ]
-keywords = ["colourspace", "colorspace", "video", "render"]
+keywords = ["faceblur", "deidentify", "anonymize", "face", "recognition", "video", "image"]
 dependencies = [
     "av >= 14.0.1",
     "pymediainfo >= 6.1.0",
