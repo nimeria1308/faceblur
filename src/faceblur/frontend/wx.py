@@ -26,6 +26,10 @@ class Drop(wx.FileDropTarget):
         return True
 
 
+DEFAULT_STRENGTH = 1.0
+DEFAULT_CONFIDENCE = 0.5
+
+
 class MainWindow(wx.Frame):
     def __init__(self, parent, title):
         super().__init__(parent, title=title, size=(600, 400))
@@ -47,11 +51,11 @@ class MainWindow(wx.Frame):
         options_panel = wx.StaticBox(right_panel, label="Options")
         options_sizer = wx.StaticBoxSizer(options_panel, wx.VERTICAL)
 
-        self._strength = wx.SpinCtrlDouble(right_panel, value="1.0", min=0, max=10, inc=0.1)
+        self._strength = wx.SpinCtrlDouble(right_panel, value=str(DEFAULT_STRENGTH), min=0, max=10, inc=0.1)
         options_sizer.Add(wx.StaticText(right_panel, label="Blur strength"), 0, wx.LEFT | wx.TOP, 5)
         options_sizer.Add(self._strength, 0, wx.EXPAND | wx.ALL, 5)
 
-        self._confidence = wx.SpinCtrlDouble(right_panel, value="0.5", min=0, max=1, inc=0.01)
+        self._confidence = wx.SpinCtrlDouble(right_panel, value=str(DEFAULT_CONFIDENCE), min=0, max=1, inc=0.01)
         options_sizer.Add(wx.StaticText(right_panel, label="Detection confidence"), 0, wx.LEFT | wx.TOP, 5)
         options_sizer.Add(self._confidence, 0, wx.EXPAND | wx.ALL, 5)
 
@@ -61,9 +65,11 @@ class MainWindow(wx.Frame):
         button_panel = wx.Panel(right_panel)
         button_sizer = wx.BoxSizer(wx.VERTICAL)
 
+        self._reset_button = wx.Button(button_panel, label="Reset")
         self._start_button = wx.Button(button_panel, label="Start")
         self._start_button.SetDefault()
         self._buttons = [
+            self._reset_button,
             self._start_button,
         ]
 
