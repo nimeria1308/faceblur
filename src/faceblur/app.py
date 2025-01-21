@@ -170,7 +170,8 @@ def faceblur(
         video_format=None,
         video_encoder=None,
         image_format=None,
-        progress_type=tqdm.tqdm,
+        total_progress=tqdm.tqdm,
+        file_progress=tqdm.tqdm,
         thread_type=THREAD_TYPE_DEFAULT,
         threads=os.cpu_count(),
         on_done=None,
@@ -178,9 +179,10 @@ def faceblur(
 
     try:
         # Start processing them one by one
-        with progress_type(get_supported_filenames(inputs), unit=" file(s)") as progress:
-            for input_filename in progress:
-                progress.set_description(desc=os.path.basename(input_filename))
+        filenames = get_supported_filenames(inputs)
+        with total_progress(total=len(filenames), unit=" file(s)") as progress:
+            for input_filename in filenames:
+                progress.set_description(os.path.basename(input_filename))
 
                 if stop:
                     stop.throwIfTerminated()
@@ -191,10 +193,13 @@ def faceblur(
                 else:
                     # Assume video
                     _faceblur_video(input_filename, output, strength, confidence, video_format,
-                                    video_encoder, progress_type, thread_type, threads, stop)
+                                    video_encoder, file_progress, thread_type, threads, stop)
 
                 if on_done:
                     on_done(input_filename)
+
+                progress.update()
+
     except TerminatedException:
         # No action neccessary
         pass

@@ -6,6 +6,7 @@ import wx
 
 from faceblur.app import get_supported_filenames
 from faceblur.app import faceblur
+from faceblur.progress import Progress
 from faceblur.threading import TerminatingCookie
 
 
@@ -31,6 +32,95 @@ class Drop(wx.FileDropTarget):
 
 DEFAULT_STRENGTH = 1.0
 DEFAULT_CONFIDENCE = 0.5
+
+
+class ProgressWrapper(Progress):
+    def __init__(self, progress, status):
+        self._progress = progress
+        self._status = status
+
+    def __call__(self, desc=None, total=None, leave=True, unit=None):
+        wx.CallAfter(self._set_all, total, desc)
+        return self
+
+    def _set_all(self, total, status):
+        self._progress.SetRange(total)
+        self._status.SetLabel(status if status else "")
+        self._status.GetParent().Layout()
+
+    def set_description(self, description):
+        wx.CallAfter(self._set_status, description)
+
+    def _set_status(self, status):
+        self._status.SetLabel(status if status else "")
+
+    def update(self, n=1):
+        wx.CallAfter(self._update, n)
+
+    def _update(self, n):
+        self._progress.SetValue(self._progress.GetValue() + n)
+
+    def _clear(self):
+        self._progress.SetValue(0)
+        self._status.SetLabel("")
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        wx.CallAfter(self._clear)
+
+
+class ProgressDialog(wx.Dialog):
+    def __init__(self, window, title):
+        super().__init__(window, title=title, size=(600, 250), style=wx.DEFAULT_DIALOG_STYLE & ~wx.CLOSE_BOX)
+
+        self._window = window
+
+        # Main vertical layout
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # First progress bar and text
+        file_progress_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self._file_progress_text = wx.StaticText(self, label="File: ", style=wx.ST_ELLIPSIZE_END)
+        self._file_progress_text.SetMaxSize((300, -1))
+        self._file_progress_bar = wx.Gauge(self, style=wx.GA_SMOOTH | wx.GA_TEXT)
+        file_progress_sizer.Add(self._file_progress_text, flag=wx.RIGHT, border=10)
+        file_progress_sizer.Add(self._file_progress_bar, proportion=1)
+
+        # Second progress bar and text
+        total_progress_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self._total_progress_text = wx.StaticText(self, label="Total:", style=wx.ST_ELLIPSIZE_END)
+        self._total_progress_text.SetMaxSize((300, -1))
+        self._total_progress_bar = wx.Gauge(self, style=wx.GA_SMOOTH | wx.GA_TEXT | wx.GA_PROGRESS)
+        total_progress_sizer.Add(self._total_progress_text, flag=wx.RIGHT, border=10)
+        total_progress_sizer.Add(self._total_progress_bar, proportion=1)
+
+        # Cancel button
+        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        cancel_button = wx.Button(self, label="Cancel")
+        cancel_button.SetDefault()
+        button_sizer.Add(cancel_button, flag=wx.ALIGN_LEFT)
+
+        # Bind the cancel button to close the dialog
+        cancel_button.Bind(wx.EVT_BUTTON, self._on_cancel)
+
+        # Add components to main_sizer
+        main_sizer.Add(file_progress_sizer, flag=wx.EXPAND | wx.ALL, border=15)
+        main_sizer.Add(total_progress_sizer, flag=wx.EXPAND | wx.ALL, border=15)
+        main_sizer.Add(button_sizer, flag=wx.ALIGN_LEFT | wx.ALL, border=15)
+
+        # Set sizer for the dialog
+        self.SetSizer(main_sizer)
+
+    @property
+    def progress_total(self):
+        return self._total_progress_bar, self._total_progress_text
+
+    @property
+    def progress_file(self):
+        return self._file_progress_bar, self._file_progress_text
+
+    def _on_cancel(self, event):
+        assert self._window._cookie
+        self._window._cookie.requestTermination()
 
 
 class MainWindow(wx.Frame):
@@ -65,27 +155,22 @@ class MainWindow(wx.Frame):
         options_sizer.Add(wx.StaticText(right_panel, label="Detection confidence"), 0, wx.LEFT | wx.TOP, 5)
         options_sizer.Add(self._confidence, 0, wx.EXPAND | wx.ALL, 5)
 
+        self._reset_button = wx.Button(right_panel, label="Reset")
+        self._reset_button.Bind(wx.EVT_BUTTON, self._on_reset)
+        options_sizer.Add(self._reset_button, 0, wx.EXPAND | wx.ALL, 5)
+
         right_sizer.Add(options_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         # Button(s) on the right
         button_panel = wx.Panel(right_panel)
         button_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self._reset_button = wx.Button(button_panel, label="Reset")
-        self._reset_button.Bind(wx.EVT_BUTTON, self._on_reset)
-
         self._start_button = wx.Button(button_panel, label="Start")
         self._start_button.Bind(wx.EVT_BUTTON, self._on_start)
         self._start_button.SetDefault()
 
-        self._stop_button = wx.Button(button_panel, label="Stop")
-        self._stop_button.Bind(wx.EVT_BUTTON, self._on_stop)
-        self._stop_button.Enable(False)
-
         self._buttons = [
-            self._reset_button,
             self._start_button,
-            self._stop_button,
         ]
 
         for button in self._buttons:
@@ -100,47 +185,12 @@ class MainWindow(wx.Frame):
         # Set the main panel sizer
         panel.SetSizer(main_sizer)
 
-        # Add a status bar with progress bars
-        self._status_bar = wx.StatusBar(self)
-        self.SetStatusBar(self._status_bar)
-
-        # Create 3 fields in the status bar
-        self._status_bar.SetFieldsCount(3)
-        self._status_bar.SetStatusWidths([-1, 150, 150])  # -1 = stretch, others fixed
-
-        # Add progress bars to the last two fields
-        self._progress_bar1 = wx.Gauge(self._status_bar)
-        self._progress_bar2 = wx.Gauge(self._status_bar)
-
-        # Position progress bars within the status bar
-        self.Bind(wx.EVT_SIZE, self.on_resize_statusbar)  # Keep layout consistent during resizing
-        self.position_progress_bars()
-
-        # Simulate some progress changes
-        self._progress_bar1.SetValue(60)
-        self._progress_bar2.SetValue(30)
-
         # Support drag & drop
         self.SetDropTarget(Drop(self))
 
         # Show the window
         self.Centre()
         self.Show()
-
-    def position_progress_bars(self):
-        # Dynamically position progress bars based on the status bar's dimensions
-        rect1 = self._status_bar.GetFieldRect(1)
-        rect2 = self._status_bar.GetFieldRect(2)
-
-        self._progress_bar1.SetSize(rect1)
-        self._progress_bar1.SetPosition((rect1.x, rect1.y))
-        self._progress_bar1.SetValue(0)
-
-        self._progress_bar2.SetPosition((rect2.x + 5, rect2.y + (rect2.height - self._progress_bar2.GetSize()[1]) // 2))
-
-    def on_resize_statusbar(self, event):
-        self.position_progress_bars()
-        event.Skip()
 
     def _list_on_key_down(self, event):
         # Check for Ctrl+A (Select All)
@@ -173,22 +223,15 @@ class MainWindow(wx.Frame):
                 # Assumes no duplicates in the list
                 break
 
-    def _set_enablements(self, stopped):
-        self._file_list.Enable(stopped)
-        self._strength.Enable(stopped)
-        self._confidence.Enable(stopped)
-        self._reset_button.Enable(stopped)
-        self._start_button.Enable(stopped)
-        self._stop_button.Enable(not stopped)
-
     def _thread_done(self):
         assert self._thread
+        assert self._progress
 
         self._thread.join()
         self._cookie = None
         self._thread = None
 
-        self._set_enablements(True)
+        self._progress.Close()
 
     def _on_done(self, filename):
         if filename:
@@ -215,24 +258,23 @@ class MainWindow(wx.Frame):
 
         self._cookie = TerminatingCookie()
 
+        self._progress = ProgressDialog(self, "Working...")
+
         kwargs = {
             "inputs": self._file_list.GetItems(),
             "output": output,
             "strength": self._strength.GetValue(),
             "confidence": self._confidence.GetValue(),
-            # "progress_type": None,
+            "total_progress": ProgressWrapper(*self._progress.progress_total),
+            "file_progress": ProgressWrapper(*self._progress.progress_file),
             "on_done": self._on_done,
             "stop": self._cookie,
         }
 
-        self._set_enablements(False)
-
         self._thread = threading.Thread(target=faceblur, kwargs=kwargs)
         self._thread.start()
 
-    def _on_stop(self, event):
-        assert self._cookie
-        self._cookie.requestTermination()
+        self._progress.ShowModal()
 
 
 def main():
