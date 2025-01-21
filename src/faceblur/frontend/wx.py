@@ -108,7 +108,9 @@ class ProgressDialog(wx.Dialog):
         main_sizer.Add(button_sizer, flag=wx.ALIGN_LEFT | wx.ALL, border=15)
 
         # Set sizer for the dialog
+        self.SetMinSize((600, -1))
         self.SetSizer(main_sizer)
+        self.Fit()
 
     @property
     def progress_total(self):
