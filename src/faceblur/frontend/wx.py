@@ -278,9 +278,7 @@ class MainWindow(wx.Frame):
             return
 
         if not self._output.GetValue():
-            wx.MessageDialog(None, "Please, select output folder.", "Error",
-                             wx.OK | wx.CENTER | wx.ICON_ERROR).ShowModal()
-            return
+            self._on_browse(None)
 
         if not os.path.isdir(self._output.GetValue()):
             wx.MessageDialog(None, f"Selected output {self._output.GetValue(
