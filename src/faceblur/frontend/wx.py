@@ -80,16 +80,18 @@ class ProgressDialog(wx.Dialog):
 
         # First progress bar and text
         file_progress_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self._file_progress_text = wx.StaticText(self, label="File: ", style=wx.ST_ELLIPSIZE_END)
-        self._file_progress_text.SetMaxSize((300, -1))
+        self._file_progress_text = wx.StaticText(self, label="Processing...", style=wx.ST_ELLIPSIZE_END)
+        self._file_progress_text.SetMinSize((200, -1))
+        self._file_progress_text.SetMaxSize((200, -1))
         self._file_progress_bar = wx.Gauge(self, style=wx.GA_SMOOTH | wx.GA_TEXT)
         file_progress_sizer.Add(self._file_progress_text, flag=wx.RIGHT, border=10)
         file_progress_sizer.Add(self._file_progress_bar, proportion=1)
 
         # Second progress bar and text
         total_progress_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self._total_progress_text = wx.StaticText(self, label="Total:", style=wx.ST_ELLIPSIZE_END)
-        self._total_progress_text.SetMaxSize((300, -1))
+        self._total_progress_text = wx.StaticText(self, label="Processing...", style=wx.ST_ELLIPSIZE_END)
+        self._total_progress_text.SetMinSize((200, -1))
+        self._total_progress_text.SetMaxSize((200, -1))
         self._total_progress_bar = wx.Gauge(self, style=wx.GA_SMOOTH | wx.GA_TEXT | wx.GA_PROGRESS)
         total_progress_sizer.Add(self._total_progress_text, flag=wx.RIGHT, border=10)
         total_progress_sizer.Add(self._total_progress_bar, proportion=1)
