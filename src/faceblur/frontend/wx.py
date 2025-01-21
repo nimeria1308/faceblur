@@ -141,6 +141,7 @@ class MainWindow(wx.Frame):
 
         # List of files on the left
         self._file_list = wx.ListBox(panel, style=wx.LB_EXTENDED)
+        self._file_list.SetMinSize((400, -1))
         self._file_list.Bind(wx.EVT_KEY_DOWN, self._list_on_key_down)
         main_sizer.Add(self._file_list, 1, wx.EXPAND | wx.ALL, 5)
 
@@ -197,6 +198,12 @@ class MainWindow(wx.Frame):
 
         # Set the main panel sizer
         panel.SetSizer(main_sizer)
+
+        # Add a top-level sizer to make sure all vertical elements
+        # are visible by default
+        top_sizer = wx.BoxSizer(wx.VERTICAL)
+        top_sizer.Add(panel, 1, wx.EXPAND | wx.ALL)
+        self.SetSizerAndFit(top_sizer)
 
         # Support drag & drop
         self.SetDropTarget(Drop(self))
