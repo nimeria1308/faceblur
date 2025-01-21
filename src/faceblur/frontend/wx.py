@@ -103,8 +103,8 @@ class ProgressDialog(wx.Dialog):
         cancel_button.Bind(wx.EVT_BUTTON, self._on_cancel)
 
         # Add components to main_sizer
-        main_sizer.Add(file_progress_sizer, flag=wx.EXPAND | wx.ALL, border=15)
         main_sizer.Add(total_progress_sizer, flag=wx.EXPAND | wx.ALL, border=15)
+        main_sizer.Add(file_progress_sizer, flag=wx.EXPAND | wx.ALL, border=15)
         main_sizer.Add(button_sizer, flag=wx.ALIGN_LEFT | wx.ALL, border=15)
 
         # Set sizer for the dialog
