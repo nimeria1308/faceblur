@@ -53,6 +53,7 @@ class ProgressWrapper(Progress):
 
     def _set_status(self, status):
         self._status.SetLabel(status if status else "")
+        self._status.GetParent().Layout()
 
     def update(self, n=1):
         wx.CallAfter(self._update, n)
