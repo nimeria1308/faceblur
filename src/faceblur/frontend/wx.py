@@ -159,6 +159,14 @@ class MainWindow(wx.Frame):
         self._reset_button.Bind(wx.EVT_BUTTON, self._on_reset)
         options_sizer.Add(self._reset_button, 0, wx.EXPAND | wx.ALL, 5)
 
+        self._output = wx.TextCtrl(right_panel)
+        options_sizer.Add(wx.StaticText(right_panel, label="Output"), 0, wx.LEFT | wx.TOP, 5)
+        options_sizer.Add(self._output, 0, wx.EXPAND | wx.ALL, 5)
+
+        self._browse_button = wx.Button(right_panel, label="Browse")
+        self._browse_button.Bind(wx.EVT_BUTTON, self._on_browse)
+        options_sizer.Add(self._browse_button, 0, wx.EXPAND | wx.ALL, 5)
+
         right_sizer.Add(options_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         # Button(s) on the right
@@ -215,6 +223,12 @@ class MainWindow(wx.Frame):
         self._strength.SetValue(DEFAULT_STRENGTH)
         self._confidence.SetValue(DEFAULT_CONFIDENCE)
 
+    def _on_browse(self, event):
+        with wx.DirDialog(None, "Output folder", style=wx.DD_DEFAULT_STYLE) as dlg:
+            if dlg.ShowModal() == wx.ID_OK:
+                self._output.SetValue(dlg.GetPath())
+                self._output.GetParent().Layout()
+
     def _remove_file(self, filename):
         for index, f in enumerate(self._file_list.GetItems()):
             if f == filename:
@@ -247,14 +261,19 @@ class MainWindow(wx.Frame):
 
         if not self._file_list.GetCount():
             # Nothing to do
+            wx.MessageDialog(None, "Please, select files for processing.", "Error",
+                             wx.OK | wx.CENTER | wx.ICON_ERROR).ShowModal()
             return
 
-        with wx.DirDialog(None, "Choose output folder", style=wx.DD_DEFAULT_STYLE) as dlg:
-            if dlg.ShowModal() == wx.ID_OK:
-                output = dlg.GetPath()
-            else:
-                # Did not select
-                return
+        if not self._output.GetValue():
+            wx.MessageDialog(None, "Please, select output folder.", "Error",
+                             wx.OK | wx.CENTER | wx.ICON_ERROR).ShowModal()
+            return
+
+        if not os.path.isdir(self._output.GetValue()):
+            wx.MessageDialog(None, f"Selected output {self._output.GetValue(
+            )} is not an existing folder.", "Error", wx.OK | wx.CENTER | wx.ICON_ERROR).ShowModal()
+            return
 
         self._cookie = TerminatingCookie()
 
@@ -262,7 +281,7 @@ class MainWindow(wx.Frame):
 
         kwargs = {
             "inputs": self._file_list.GetItems(),
-            "output": output,
+            "output": self._output.GetValue(),
             "strength": self._strength.GetValue(),
             "confidence": self._confidence.GetValue(),
             "total_progress": ProgressWrapper(*self._progress.progress_total),
