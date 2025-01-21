@@ -175,6 +175,7 @@ def faceblur(
         thread_type=THREAD_TYPE_DEFAULT,
         threads=os.cpu_count(),
         on_done=None,
+        on_error=None,
         stop: TerminatingCookie = None):
 
     try:
@@ -200,9 +201,18 @@ def faceblur(
 
                 progress.update()
 
-    except TerminatedException:
-        # No action neccessary
-        pass
-    finally:
+        # All finished
         if on_done:
             on_done(None)
+
+    except TerminatedException:
+        # Cancelled prematurely. Still need to call on_done callback
+        if on_done:
+            on_done(None)
+
+    except Exception as ex:
+        # Report error back to UI
+        if on_error:
+            on_error(ex)
+        else:
+            raise ex
