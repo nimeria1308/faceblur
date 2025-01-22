@@ -1,6 +1,6 @@
 # Copyright (C) 2025, Simona Dimitrova
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 FORMATS = {
     "bmp": ["bmp"],
@@ -52,5 +52,8 @@ def image_open(filename):
     # Therefore to be safe, just convert to RGB
     if image.mode != "RGB":
         image = image.convert("RGB")
+
+    # Automatically rotate / transpose, etc. to straighten it up
+    image = ImageOps.exif_transpose(image)
 
     return image
