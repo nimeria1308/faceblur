@@ -40,7 +40,7 @@ def main():
                         Select a custom container format for video files.
                         If not speciefied it will use the same cotainer as each input.""")
 
-    parser.add_argument("--video-encoder", "-v", choices=ENCODERS,
+    parser.add_argument("--video-encoder", "-V", choices=ENCODERS,
                         help="""
                         Select a custom video encoder.
                         If not speciefied it will use the same codecs as in the input videos""")
@@ -70,6 +70,10 @@ def main():
                         RECT_BLUR: Uses gaussian blur directly on the face rects.
                         DEBUG: Dumps found faces and draws face boxes onto output.
                         Defaults to {DEFAULT_MODE}""")
+
+    parser.add_argument("--verbose", "-v",
+                        action="store_true",
+                        help="Enable verbose logging from all components.")
 
     args = vars(parser.parse_args())
     faceblur(**args)

@@ -131,10 +131,11 @@ class ProgressDialog(wx.Dialog):
 
 
 class MainWindow(wx.Frame):
-    def __init__(self, parent, title, mode):
+    def __init__(self, parent, title, mode, verbose):
         super().__init__(parent, title=title, size=(600, 400))
 
         self._mode = mode
+        self._verbose = verbose
         self._thread = None
         self._cookie = None
 
@@ -313,6 +314,7 @@ class MainWindow(wx.Frame):
             "on_error": self._on_error,
             "stop": self._cookie,
             "mode": self._mode,
+            "verbose": self._verbose,
         }
 
         self._thread = threading.Thread(target=faceblur, kwargs=kwargs)
@@ -335,10 +337,14 @@ def main():
                         DEBUG: Dumps found faces and draws face boxes onto output.
                         Defaults to {DEFAULT_MODE}""")
 
+    parser.add_argument("--verbose", "-v",
+                        action="store_true",
+                        help="Enable verbose logging from all components.")
+
     args = parser.parse_args()
 
     app = wx.App(False)
-    frame = MainWindow(None, "FaceBlur: Automatic Photo and Video Deidentifier", args.mode)
+    frame = MainWindow(None, "FaceBlur: Automatic Photo and Video Deidentifier", args.mode, args.verbose)
     app.MainLoop()
 
 

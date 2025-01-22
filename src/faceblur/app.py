@@ -1,5 +1,6 @@
 # Copyright (C) 2025, Simona Dimitrova
 
+import av
 import json
 import logging
 import os
@@ -220,7 +221,17 @@ def faceblur(
         on_done=None,
         on_error=None,
         stop: TerminatingCookie = None,
-        mode=DEFAULT_MODE):
+        mode=DEFAULT_MODE,
+        verbose=False):
+
+    # WARNING/libav.swscaler           (66753 ): deprecated pixel format used, make sure you did set range correctly
+    logging_format = "%(levelname)-7s/%(name)-24s (%(process)-6d): %(message)s"
+    if verbose:
+        av.logging.set_level(av.logging.VERBOSE)
+        logging.basicConfig(format=logging_format, level=logging.DEBUG)
+    else:
+        av.logging.set_level(av.logging.ERROR)
+        logging.basicConfig(format=logging_format)
 
     # Start processing them one by one
     filenames = get_supported_filenames(inputs)
@@ -263,4 +274,3 @@ def faceblur(
     # All finished (only if not failed)
     if on_done and not failed:
         on_done(None)
-
