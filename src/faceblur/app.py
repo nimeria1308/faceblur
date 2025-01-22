@@ -222,13 +222,14 @@ def faceblur(
         stop: TerminatingCookie = None,
         mode=DEFAULT_MODE):
 
-    try:
-        # Start processing them one by one
-        filenames = get_supported_filenames(inputs)
-        with total_progress(total=len(filenames), unit=" file(s)") as progress:
-            for input_filename in filenames:
-                progress.set_description(os.path.basename(input_filename))
+    # Start processing them one by one
+    filenames = get_supported_filenames(inputs)
+    failed = False
+    with total_progress(total=len(filenames), unit=" file(s)") as progress:
+        for input_filename in filenames:
+            progress.set_description(os.path.basename(input_filename))
 
+            try:
                 if stop:
                     stop.throwIfTerminated()
 
@@ -245,18 +246,21 @@ def faceblur(
 
                 progress.update()
 
-        # All finished
-        if on_done:
-            on_done(None)
+            except TerminatedException as tex:
+                # Cancelled prematurely
+                if on_done:
+                    break
 
-    except TerminatedException:
-        # Cancelled prematurely. Still need to call on_done callback
-        if on_done:
-            on_done(None)
+            except Exception as ex:
+                # Report error back to UI
+                if on_error:
+                    on_error(ex, input_filename)
+                    failed = True
+                    break
+                else:
+                    raise ex
 
-    except Exception as ex:
-        # Report error back to UI
-        if on_error:
-            on_error(ex)
-        else:
-            raise ex
+    # All finished (only if not failed)
+    if on_done and not failed:
+        on_done(None)
+

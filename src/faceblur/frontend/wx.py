@@ -270,15 +270,15 @@ class MainWindow(wx.Frame):
             # All files have finished
             wx.CallAfter(self._thread_done)
 
-    def _handle_error(self, ex):
+    def _handle_error(self, ex, filename):
         ex = str(ex) if ex else "Unknown error"
-        wx.MessageDialog(None, f"An error occured wile processing: {ex}", "Error",
+        wx.MessageDialog(None, f"An error occured wile processing {filename}: {ex}", "Error",
                          wx.OK | wx.CENTER | wx.ICON_ERROR).ShowModal()
 
         self._thread_done()
 
-    def _on_error(self, ex):
-        wx.CallAfter(self._handle_error, ex)
+    def _on_error(self, ex, filename):
+        wx.CallAfter(self._handle_error, ex, filename)
 
     def _on_start(self, event):
         assert not self._thread
