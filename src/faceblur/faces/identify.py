@@ -14,6 +14,24 @@ from PIL.Image import Image
 IDENTIFY_IMAGE_SIZE = 1920
 
 
+class Detection:
+    def __init__(self, close, far, merged, interpolated=[]):
+        self.close = close
+        self.far = far
+        self.merged = merged
+        self.interpolated = interpolated
+
+    def to_json(self):
+        return {k: [x.to_json() for x in v] for k, v in vars(self).items()}
+
+    def __bool__(self):
+        return bool(self.close and self.far and self.merged and self.interpolated)
+
+    @staticmethod
+    def combine(merged, interpolated):
+        return Detection(merged.close, merged.far, merged.merged, interpolated)
+
+
 def _find_divisor(width, height, max_side):
     side = max(width, height)
     return math.ceil(side / max_side)
@@ -21,6 +39,10 @@ def _find_divisor(width, height, max_side):
 
 def _merge_faces(faces_close, faces_far, confidence):
     faces = []
+
+    # Modify faces_close / faces_far locally
+    faces_close = list(faces_close)
+    faces_far = list(faces_far)
 
     while faces_close:
         faces_with_best_score = -1, -1
@@ -101,12 +123,15 @@ def _identify_faces_from_image(image: Image,
 
     # If either model did not find faces, simply return whatever the other one found (if any)
     if not faces_close:
-        return faces_far
+        return Detection([], faces_far, faces_far)
     elif not faces_far:
-        return faces_close
+        return Detection(faces_close, [], faces_close)
 
     # This means that both found faces and we need to group then and unite them into bigger boxes
-    return _merge_faces(faces_close, faces_far, merge_confidence)
+    faces_merged = _merge_faces(faces_close, faces_far, merge_confidence)
+
+    # Return all found faces, let the caller make what they want of them
+    return Detection(faces_close, faces_far, faces_merged)
 
 
 class Box:
@@ -175,6 +200,9 @@ class Box:
 
         # intersection over union
         return intersection_area / union_area
+
+    def to_json(self):
+        return vars(self)
 
 
 def _track_faces(frames, min_score=0.5):
@@ -282,8 +310,14 @@ def identify_faces_from_video(container: InputContainer,
                             if packet.stream == container.video:
                                 progress.update()
 
-    # Convert the coords to something meaningful
-    return {index: _interpolate_faces(faces, tracking_frame_distance, tracking_confidence) for index, faces in faces.items()}
+    # Interpolate temporaly missing faces
+    faces_interpolated = {index: [faces_in_frame.merged for faces_in_frame in faces_for_all_frames]
+                          for index, faces_for_all_frames in faces.items()}
+
+    # Merge all available information for faces
+    return {index:
+            [Detection.combine(faces[index][i], faces_interpolated[index][i]) for i in range(len(faces[index]))]
+            for index in faces}
 
 
 def identify_faces_from_image(image: Image,

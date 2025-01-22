@@ -6,6 +6,7 @@ import os
 
 from faceblur.app import DEFAULT_OUT
 from faceblur.app import faceblur
+from faceblur.app import Mode, DEFAULT_MODE
 from faceblur.av.container import FORMATS as CONTAINER_FORMATS
 from faceblur.av.video import ENCODERS, THREAD_TYPES, THREAD_TYPE_DEFAULT
 from faceblur.image import FORMATS as IMAGE_FORMATS
@@ -60,6 +61,15 @@ def main():
                         help=f"""
                         How many threads to use for decoding/encoding video.
                         Defaults to the number of logical cores: {os.cpu_count()}.""")
+
+    parser.add_argument("--mode", "-m",
+                        choices=list(Mode),
+                        default=DEFAULT_MODE,
+                        help=f"""
+                        Modes of operation:
+                        RECT_BLUR: Uses gaussian blur directly on the face rects.
+                        DEBUG: Dumps found faces and draws face boxes onto output.
+                        Defaults to {DEFAULT_MODE}""")
 
     args = vars(parser.parse_args())
     faceblur(**args)

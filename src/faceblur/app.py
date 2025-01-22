@@ -1,15 +1,18 @@
 # Copyright (C) 2025, Simona Dimitrova
 
+import json
 import logging
 import os
 import tqdm
 
+from enum import StrEnum
 from faceblur.av.container import EXTENSIONS as CONTAINER_EXENTSIONS
 from faceblur.av.container import FORMATS as CONTAINER_FORMATS
 from faceblur.av.container import InputContainer, OutputContainer
 from faceblur.av.video import THREAD_TYPE_DEFAULT
 from faceblur.av.video import VideoFrame
 from faceblur.faces.identify import identify_faces_from_image, identify_faces_from_video
+from faceblur.faces.debug import debug_faces
 from faceblur.faces.deidentify import blur_faces
 from faceblur.image import EXTENSIONS as IMAGE_EXTENSIONS
 from faceblur.image import FORMATS as IMAGE_FORMATS
@@ -22,6 +25,14 @@ register_heif_opener()
 DEFAULT_OUT = "_deident"
 
 SUPPORTED_EXTENSIONS = set(CONTAINER_EXENTSIONS + IMAGE_EXTENSIONS)
+
+
+class Mode(StrEnum):
+    RECT_BLUR = "RECT_BLUR"
+    DEBUG = "DEBUG"
+
+
+DEFAULT_MODE = Mode.RECT_BLUR
 
 
 def is_filename_from_ext_group(filename, group):
@@ -77,33 +88,59 @@ def _create_output(filename, output, format=None):
     return os.path.join(output, os.path.basename(filename))
 
 
-def _process_video_frame(frame: VideoFrame, faces, strength):
+def _process_video_frame(frame: VideoFrame, faces, strength, mode):
     # do extra processing only if any faces were found
-    if faces:
-        # av.video.frame.VideoFrame -> PIL.Image
-        image = frame.to_image()
+    if mode == Mode.DEBUG:
+        if faces:
+            # any faces
+            # av.video.frame.VideoFrame -> PIL.Image
+            image = frame.to_image()
 
-        # De-identify
-        image = blur_faces(image, faces, strength)
+            # Draw face boxes
+            image = debug_faces(image, faces)
 
-        # PIL.Image -> av.video.frame.VideoFrame
-        frame = VideoFrame.from_image(image, frame)
+            # PIL.Image -> av.video.frame.VideoFrame
+            frame = VideoFrame.from_image(image, frame)
+
+    elif mode == Mode.RECT_BLUR:
+        if faces.interpolated:
+            # av.video.frame.VideoFrame -> PIL.Image
+            image = frame.to_image()
+
+            # De-identify via a rectangular gaussian blur
+            image = blur_faces(image, faces.interpolated, strength)
+
+            # PIL.Image -> av.video.frame.VideoFrame
+            frame = VideoFrame.from_image(image, frame)
+    else:
+        raise ValueError(f"Unsupported mode: {mode}")
 
     return frame
 
 
-def _faceblur_image(input_filename, output, strength, confidence, format):
+def _faceblur_image(input_filename, output, strength, confidence, format, mode):
     # Load
     image = image_open(input_filename)
 
     # Find faces
     faces = identify_faces_from_image(image, detection_confidence=confidence)
 
-    # De-identify
-    image = blur_faces(image, faces, strength)
+    output_filename = _create_output(input_filename, output, format)
+
+    if mode == Mode.DEBUG:
+        # Save face boxes to file
+        with open(f"{output_filename}.json", "w") as f:
+            json.dump(faces.to_json(), f, indent=4)
+
+        # Draw face boxes
+        image = debug_faces(image, faces)
+    elif mode == Mode.RECT_BLUR:
+        # De-identify via a rectangular gaussian blur
+        image = blur_faces(image, faces.merged, strength)
+    else:
+        raise ValueError(f"Unsupported mode: {mode}")
 
     # Save
-    output_filename = _create_output(input_filename, output, format)
     image.save(output_filename)
 
 
@@ -112,7 +149,7 @@ def _faceblur_video(
         strength, confidence,
         format, encoder,
         progress_type,
-        thread_type, threads, stop):
+        thread_type, threads, stop, mode):
 
     # First find the faces. We can't do that on a frame-by-frame basis as it requires
     # to have the full data to interpolate missing face locations
@@ -120,11 +157,17 @@ def _faceblur_video(
         faces = identify_faces_from_video(
             input_container, detection_confidence=confidence, progress=progress_type, stop=stop)
 
-    # let's reverse the lists so that we would be popping elements, rather than read + delete
-    for frames in faces.values():
-        frames.reverse()
-
     output_filename = _create_output(input_filename, output, format)
+    if mode == Mode.DEBUG:
+        # Save face boxes to file
+        with open(f"{output_filename}.json", "w") as f:
+            faces_json = {index: [d.to_json() for d in detections] for index, detections in faces.items()}
+            json.dump(faces_json, f, indent=4)
+
+    # let's reverse the lists so that we would be popping elements, rather than read + delete
+    for detections in faces.values():
+        detections.reverse()
+
     try:
         with InputContainer(input_filename, thread_type, threads) as input_container:
             with OutputContainer(output_filename, input_container, encoder) as output_container:
@@ -140,7 +183,7 @@ def _faceblur_video(
                                 faces_in_frame = faces[frame.stream.index].pop()
 
                                 # Process (if necessary)
-                                frame = _process_video_frame(frame, faces_in_frame, strength)
+                                frame = _process_video_frame(frame, faces_in_frame, strength, mode)
 
                                 # Encode + mux
                                 output_container.mux(frame)
@@ -176,7 +219,8 @@ def faceblur(
         threads=os.cpu_count(),
         on_done=None,
         on_error=None,
-        stop: TerminatingCookie = None):
+        stop: TerminatingCookie = None,
+        mode=DEFAULT_MODE):
 
     try:
         # Start processing them one by one
@@ -190,11 +234,11 @@ def faceblur(
 
                 if is_filename_from_ext_group(input_filename, IMAGE_EXTENSIONS):
                     # Handle images
-                    _faceblur_image(input_filename, output, strength, confidence, image_format)
+                    _faceblur_image(input_filename, output, strength, confidence, image_format, mode)
                 else:
                     # Assume video
                     _faceblur_video(input_filename, output, strength, confidence, video_format,
-                                    video_encoder, file_progress, thread_type, threads, stop)
+                                    video_encoder, file_progress, thread_type, threads, stop, mode)
 
                 if on_done:
                     on_done(input_filename)
