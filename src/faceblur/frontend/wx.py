@@ -1,11 +1,13 @@
 # Copyright (C) 2025, Simona Dimitrova
 
+import argparse
 import os
 import threading
 import wx
 
 from faceblur.app import get_supported_filenames
 from faceblur.app import faceblur
+from faceblur.app import Mode, DEFAULT_MODE
 from faceblur.progress import Progress
 from faceblur.threading import TerminatingCookie
 
@@ -129,9 +131,10 @@ class ProgressDialog(wx.Dialog):
 
 
 class MainWindow(wx.Frame):
-    def __init__(self, parent, title):
+    def __init__(self, parent, title, mode):
         super().__init__(parent, title=title, size=(600, 400))
 
+        self._mode = mode
         self._thread = None
         self._cookie = None
 
@@ -309,6 +312,7 @@ class MainWindow(wx.Frame):
             "on_done": self._on_done,
             "on_error": self._on_error,
             "stop": self._cookie,
+            "mode": self._mode,
         }
 
         self._thread = threading.Thread(target=faceblur, kwargs=kwargs)
@@ -318,8 +322,23 @@ class MainWindow(wx.Frame):
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="A tool to obfuscate faces from photos and videos via blurring them."
+    )
+
+    parser.add_argument("--mode", "-m",
+                        choices=list(Mode),
+                        default=DEFAULT_MODE,
+                        help=f"""
+                        Modes of operation:
+                        RECT_BLUR: Uses gaussian blur directly on the face rects.
+                        DEBUG: Dumps found faces and draws face boxes onto output.
+                        Defaults to {DEFAULT_MODE}""")
+
+    args = parser.parse_args()
+
     app = wx.App(False)
-    frame = MainWindow(None, "FaceBlur: Automatic Photo and Video Deidentifier")
+    frame = MainWindow(None, "FaceBlur: Automatic Photo and Video Deidentifier", args.mode)
     app.MainLoop()
 
 
