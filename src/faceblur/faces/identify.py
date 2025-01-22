@@ -95,10 +95,6 @@ def _identify_faces_from_image(image: Image,
         # Needs to be scaled down
         image = image.resize((image.width // divisor, image.height // divisor))
 
-    # mediapipe's models support RGB only. This will fail for RGBA PNGs.
-    if image.mode != "RGB":
-        image = image.convert("RGB")
-
     image = np.array(image)
     faces_close = _identify_faces_from_image_array(image, width, height, face_detection_close)
     faces_far = _identify_faces_from_image_array(image, width, height, face_detection_far)

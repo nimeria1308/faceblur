@@ -96,6 +96,12 @@ def _faceblur_image(input_filename, output, strength, confidence, format):
     # Load
     image = Image.open(input_filename)
 
+    # mediapipe's models support RGB only, which will fail for RGBA PNGs.
+    # Saving to JPG supports RGB only.
+    # Therefore to be safe, just convert to RGB
+    if image.mode != "RGB":
+        image = image.convert("RGB")
+
     # Find faces
     faces = identify_faces_from_image(image, detection_confidence=confidence)
 
