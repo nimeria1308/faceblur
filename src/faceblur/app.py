@@ -13,9 +13,9 @@ from faceblur.faces.identify import identify_faces_from_image, identify_faces_fr
 from faceblur.faces.deidentify import blur_faces
 from faceblur.image import EXTENSIONS as IMAGE_EXTENSIONS
 from faceblur.image import FORMATS as IMAGE_FORMATS
+from faceblur.image import image_open
 from faceblur.threading import TerminatedException, TerminatingCookie
 
-from PIL import Image
 from pillow_heif import register_heif_opener
 register_heif_opener()
 
@@ -94,13 +94,7 @@ def _process_video_frame(frame: VideoFrame, faces, strength):
 
 def _faceblur_image(input_filename, output, strength, confidence, format):
     # Load
-    image = Image.open(input_filename)
-
-    # mediapipe's models support RGB only, which will fail for RGBA PNGs.
-    # Saving to JPG supports RGB only.
-    # Therefore to be safe, just convert to RGB
-    if image.mode != "RGB":
-        image = image.convert("RGB")
+    image = image_open(input_filename)
 
     # Find faces
     faces = identify_faces_from_image(image, detection_confidence=confidence)

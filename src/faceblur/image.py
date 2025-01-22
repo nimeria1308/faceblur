@@ -1,5 +1,7 @@
 # Copyright (C) 2025, Simona Dimitrova
 
+from PIL import Image
+
 FORMATS = {
     "bmp": ["bmp"],
     "png": ["png"],
@@ -40,3 +42,15 @@ FORMATS = {
 }
 
 EXTENSIONS = sorted(list(set([ext for format in FORMATS.values() for ext in format])))
+
+
+def image_open(filename):
+    image = Image.open(filename)
+
+    # mediapipe's models support RGB only, which will fail for RGBA PNGs.
+    # Saving to JPG supports RGB only.
+    # Therefore to be safe, just convert to RGB
+    if image.mode != "RGB":
+        image = image.convert("RGB")
+
+    return image
