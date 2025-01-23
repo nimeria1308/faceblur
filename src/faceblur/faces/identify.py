@@ -208,7 +208,7 @@ class Box:
 def _track_faces(frames, min_score=0.5):
     tracks = []
 
-    for frame, faces in enumerate(frames):
+    for faces in frames:
         for face in faces:
             # The stats
             best_track_index = -1
@@ -315,8 +315,12 @@ def identify_faces_from_video(container: InputContainer,
                             pass
 
     # Interpolate temporaly missing faces
-    faces_interpolated = {index: [faces_in_frame.merged for faces_in_frame in faces_for_all_frames]
-                          for index, faces_for_all_frames in faces.items()}
+    faces_interpolated = {
+        index:
+        _interpolate_faces(
+            [faces_in_frame.merged for faces_in_frame in faces_for_all_frames],
+            tracking_frame_distance, tracking_confidence) for index,
+        faces_for_all_frames in faces.items()}
 
     # Merge all available information for faces
     return {index:
