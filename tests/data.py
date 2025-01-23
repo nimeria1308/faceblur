@@ -12,8 +12,21 @@ FFMPEG_FATE_SUITE_URL = "rsync://fate-suite.ffmpeg.org/fate-suite/"
 FFMPEG_FATE_SUITE = "testdata"
 
 FFMPEG_FATE_SKIPPED = [
-    # PermissionError on demux
+    # PermissionError on demux()
     "iv8/zzz-partial.mpg",
+
+    # PermissionError on decode()
+    "wmv8/wmv_drm.wmv",
+
+    # UnknownError on decode()
+    "spv1/16bpp_555.avi",
+    "spv1/32bpp.avi",
+    "tscc/2004-12-17-uebung9-partial.avi",
+    "tdsc/tdsc.asf",
+
+    # PatchWelcomeError (Not yet implemented in FFmpeg, patches welcome) on decode()
+    "vp6/interlaced32x32.avi",
+    "vp6/interlaced32x64.avi",
 ]
 
 # Make sure it is rsynced
