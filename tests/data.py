@@ -225,9 +225,15 @@ def _git_prepare(repo, folder):
     check_call(["git", "clone", repo, folder])
 
 
+PILLOW_REPO = "https://github.com/python-pillow/Pillow.git"
+PILLOW_REPO_FOLDER = os.path.join(TEST_DATA_FOLDER, "pillow")
+PILLOW_TEST_FOLDER = os.path.join(PILLOW_REPO_FOLDER, "Tests", "images")
+
+
 def _prepare_files():
     os.makedirs(TEST_DATA_FOLDER, exist_ok=True)
     _prepare_ffmpeg_fate_suite()
+    _git_prepare(PILLOW_REPO, PILLOW_REPO_FOLDER)
 
 
 _prepare_files()
