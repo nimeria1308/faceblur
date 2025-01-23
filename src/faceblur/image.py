@@ -1,6 +1,9 @@
 # Copyright (C) 2025, Simona Dimitrova
 
 from PIL import Image, ImageOps
+from pillow_heif import register_heif_opener
+
+register_heif_opener()
 
 FORMATS = {
     "bmp": ["bmp"],

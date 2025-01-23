@@ -21,8 +21,6 @@ from faceblur.image import image_open
 from faceblur.path import is_filename_from_ext_group
 from faceblur.threading import TerminatedException, TerminatingCookie
 
-from pillow_heif import register_heif_opener
-register_heif_opener()
 
 DEFAULT_OUT = "_deident"
 
