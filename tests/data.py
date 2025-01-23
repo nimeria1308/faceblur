@@ -204,17 +204,17 @@ def _git_command(folder, *commands):
     ] + list(commands))
 
 
-def _git_fetch_latest(folder):
+def _git_fetch_latest(folder, branch):
     _git_command(folder, "fetch")
-    _git_command(folder, "checkout", "origin/main")
-    _git_command(folder, "reset", "--hard", "origin/main")
+    _git_command(folder, "checkout", f"origin/{branch}")
+    _git_command(folder, "reset", "--hard", f"origin/{branch}")
     _git_command(folder, "clean", "-fdx")
 
 
-def _git_prepare(repo, folder):
+def _git_prepare(repo, folder, branch):
     if os.path.isdir(folder):
         try:
-            _git_fetch_latest(folder)
+            _git_fetch_latest(folder, branch)
             # Fatch was OK, do not clone
             return
         except:
@@ -222,10 +222,11 @@ def _git_prepare(repo, folder):
             rmtree(folder, ignore_errors=True)
 
     # Clone
-    check_call(["git", "clone", repo, folder])
+    check_call(["git", "clone", repo, folder, "-b", branch])
 
 
 PILLOW_REPO = "https://github.com/python-pillow/Pillow.git"
+PILLOW_REPO_BRANCH = "main"
 PILLOW_REPO_FOLDER = os.path.join(TEST_DATA_FOLDER, "pillow")
 PILLOW_TEST_FOLDER = os.path.join(PILLOW_REPO_FOLDER, "Tests", "images")
 
@@ -233,7 +234,7 @@ PILLOW_TEST_FOLDER = os.path.join(PILLOW_REPO_FOLDER, "Tests", "images")
 def _prepare_files():
     os.makedirs(TEST_DATA_FOLDER, exist_ok=True)
     _prepare_ffmpeg_fate_suite()
-    _git_prepare(PILLOW_REPO, PILLOW_REPO_FOLDER)
+    _git_prepare(PILLOW_REPO, PILLOW_REPO_FOLDER, PILLOW_REPO_BRANCH)
 
 
 _prepare_files()
