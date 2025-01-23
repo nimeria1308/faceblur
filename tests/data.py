@@ -12,6 +12,8 @@ FFMPEG_FATE_SUITE_URL = "rsync://fate-suite.ffmpeg.org/fate-suite/"
 FFMPEG_FATE_SUITE = "testdata"
 
 FFMPEG_FATE_SKIPPED = [
+    # PermissionError on demux
+    "iv8/zzz-partial.mpg",
 ]
 
 # Make sure it is rsynced
