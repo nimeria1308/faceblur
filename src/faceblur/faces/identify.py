@@ -25,7 +25,7 @@ class Detection:
         return {k: [x.to_json() for x in v] for k, v in vars(self).items()}
 
     def __bool__(self):
-        return bool(self.close and self.far and self.merged and self.interpolated)
+        return bool(self.close or self.far or self.merged or self.interpolated)
 
     @staticmethod
     def combine(merged, interpolated):
