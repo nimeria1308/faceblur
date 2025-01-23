@@ -153,7 +153,8 @@ class OutputVideoStream(OutputStream):
         if not frame_rate:
             # variable frame rate, but some encoders don't seem to work fine with it
             # so use the guessed one
-            frame_rate = round(input_stream._stream.guessed_rate)
+            frame_rate = math.ceil(float(
+                input_stream._info.get("maximum_frame_rate", input_stream._stream.guessed_rate)))
 
         output_stream = output_container.add_stream(encoder, frame_rate)
 
@@ -180,7 +181,6 @@ class OutputVideoStream(OutputStream):
             # "chroma_sample_location", # N/A
             "sample_aspect_ratio",
             # "has_b_frames", # Read-only
-            "framerate",
 
             "extradata",
 
