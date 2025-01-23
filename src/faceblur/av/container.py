@@ -2,6 +2,7 @@
 
 import av
 import av.container
+import av.format
 import av.stream
 import logging
 import pymediainfo
@@ -94,10 +95,11 @@ class InputContainer(Container):
 
             # Directly use the ID for container formats that support IDs, e.g. MOV, MPEG, etc., see AVFMT_SHOW_IDS.
             # If IDs are not supported, assume the ID from the index the way MediaInfo expects them to be
+            show_ids = av.format.Flags.show_ids in av.format.Flags(self._container.format.flags)
             self._streams.update({
                 stream:
                 InputVideoStream(
-                    stream, vars(tracks[stream.id if self._container.format.show_ids else stream.index + 1]))
+                    stream, vars(tracks[stream.id if show_ids else stream.index + 1]))
                 for stream in self._container.streams.video})
 
         self._video = self._streams[self._container.streams.video[0]]
