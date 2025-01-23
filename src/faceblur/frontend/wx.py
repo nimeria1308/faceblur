@@ -131,10 +131,9 @@ class ProgressDialog(wx.Dialog):
 
 
 class MainWindow(wx.Frame):
-    def __init__(self, parent, title, mode, verbose):
+    def __init__(self, parent, title, verbose):
         super().__init__(parent, title=title, size=(600, 400))
 
-        self._mode = mode
         self._verbose = verbose
         self._thread = None
         self._cookie = None
@@ -164,6 +163,12 @@ class MainWindow(wx.Frame):
         self._confidence = wx.SpinCtrlDouble(right_panel, value=str(DEFAULT_CONFIDENCE), min=0, max=1, inc=0.01)
         options_sizer.Add(wx.StaticText(right_panel, label="Detection confidence"), 0, wx.LEFT | wx.TOP, 5)
         options_sizer.Add(self._confidence, 0, wx.EXPAND | wx.ALL, 5)
+
+        # Modes
+        self._mode = wx.ComboBox(
+            right_panel, value=DEFAULT_MODE, choices=list(Mode),
+            style=wx.CB_READONLY | wx.CB_DROPDOWN)
+        options_sizer.Add(self._mode, 0, wx.EXPAND | wx.ALL, 5)
 
         self._reset_button = wx.Button(right_panel, label="Reset")
         self._reset_button.Bind(wx.EVT_BUTTON, self._on_reset)
@@ -238,6 +243,7 @@ class MainWindow(wx.Frame):
     def _on_reset(self, event):
         self._strength.SetValue(DEFAULT_STRENGTH)
         self._confidence.SetValue(DEFAULT_CONFIDENCE)
+        self._mode.SetValue(DEFAULT_MODE)
 
     def _on_browse(self, event):
         with wx.DirDialog(None, "Output folder", style=wx.DD_DEFAULT_STYLE) as dlg:
@@ -313,7 +319,7 @@ class MainWindow(wx.Frame):
             "on_done": self._on_done,
             "on_error": self._on_error,
             "stop": self._cookie,
-            "mode": self._mode,
+            "mode": self._mode.GetValue(),
             "verbose": self._verbose,
         }
 
@@ -328,15 +334,6 @@ def main():
         description="A tool to obfuscate faces from photos and videos via blurring them."
     )
 
-    parser.add_argument("--mode", "-m",
-                        choices=list(Mode),
-                        default=DEFAULT_MODE,
-                        help=f"""
-                        Modes of operation:
-                        RECT_BLUR: Uses gaussian blur directly on the face rects.
-                        DEBUG: Dumps found faces and draws face boxes onto output.
-                        Defaults to {DEFAULT_MODE}""")
-
     parser.add_argument("--verbose", "-v",
                         action="store_true",
                         help="Enable verbose logging from all components.")
@@ -344,7 +341,7 @@ def main():
     args = parser.parse_args()
 
     app = wx.App(False)
-    frame = MainWindow(None, "FaceBlur: Automatic Photo and Video Deidentifier", args.mode, args.verbose)
+    frame = MainWindow(None, "FaceBlur: Automatic Photo and Video Deidentifier", args.verbose)
     app.MainLoop()
 
 
