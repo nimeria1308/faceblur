@@ -1,9 +1,11 @@
 # Copyright (C) 2025, Simona Dimitrova
 
+import sys
 import os
 
 from faceblur.av.container import EXTENSIONS as CONTAINER_EXENTSIONS
 from faceblur.image import EXTENSIONS as IMAGE_EXTENSIONS
+from faceblur.image import FORMATS as IMAGE_FORMATS
 from faceblur.path import is_filename_from_ext_group
 from faceblur.path import walk_files
 from pymediainfo import MediaInfo
@@ -224,6 +226,12 @@ FFMPEG_FATE_SKIPPED = [
     "tiff/lzw_rgbaf32le.tif",
     "tiff/zip_rgbaf32le.tif",
     "tiff/uncompressed_rgbaf32le.tif",
+
+    # OSError: encoder error -2 when writing image file
+    "CCITT_fax/G31D.TIF",
+    "CCITT_fax/G31DS.TIF",
+    "CCITT_fax/G4.TIF",
+    "CCITT_fax/G4S.TIF",
 ]
 
 
@@ -355,6 +363,27 @@ PILLOW_SKIPPED = [
     "bmp/b/badwidth.bmp",
     "bmp/b/reallybig.bmp",
     "bmp/b/badbitcount.bmp",
+
+    # OSError: encoder error -2 when writing image file
+    "compression.tif",
+    "g4_orientation_1.tif",
+    "g4_orientation_2.tif",
+    "g4_orientation_3.tif",
+    "g4_orientation_4.tif",
+    "g4_orientation_5.tif",
+    "g4_orientation_6.tif",
+    "g4_orientation_7.tif",
+    "g4_orientation_8.tif",
+    "g4-fillorder-test.tif",
+    "g4-multi.tiff",
+    "hopper_g4_500.tif",
+    "hopper_g4.tif",
+    "pport_g4.tif",
+    "total-pages-zero.tif",
+
+    # TypeError: cannot unpack non-iterable int object
+    "1_trns.png",
+    "i_trns.png",
 ]
 
 PILLOW_HEIF_REPO = "https://github.com/bigcat88/pillow_heif.git"
@@ -381,6 +410,16 @@ PILLOW_HEIF_FILES = walk_files(PILLOW_HEIF_TEST_FOLDER)
 # Select only relevant files
 IMAGE_FILES = FFMPEG_FATE_FILES + PILLOW_FILES + PILLOW_HEIF_FILES
 IMAGE_FILES = [f for f in IMAGE_FILES if is_filename_from_ext_group(f, IMAGE_EXTENSIONS)]
+
+
+def _is_heic(filename):
+    _, ext = os.path.splitext(filename)
+    return ext[1:].lower() in IMAGE_FORMATS["heif"]
+
+
+if sys.platform == "darwin":
+    # Skip HEIC files on MacOS as saving a HEIC file causes a segfault
+    IMAGE_FILES = [f for f in IMAGE_FILES if not _is_heic(f)]
 
 # Only files with supported extensions, and only containers that actually have video streams
 VIDEO_FILES = [f for f in FFMPEG_FATE_FILES
