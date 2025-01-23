@@ -1,8 +1,8 @@
 # Copyright (C) 2025, Simona Dimitrova
 
+import av.error
 import math
 import numpy as np
-import os
 import tqdm
 
 from faceblur.av.container import InputContainer
@@ -297,18 +297,22 @@ def identify_faces_from_video(container: InputContainer,
             with progress(desc="Detecting faces", total=container.video.frames, unit=" frames", leave=False) as progress:
                 for packet in container.demux():
                     if packet.stream.type == "video":
-                        for frame in packet.decode():
-                            if stop:
-                                stop.throwIfTerminated()
+                        try:
+                            for frame in packet.decode():
+                                if stop:
+                                    stop.throwIfTerminated()
 
-                            image = frame.to_image()
-                            detected_faces = _identify_faces_from_image(
-                                image, detection_close, detection_far, merge_confidence, image_size)
+                                image = frame.to_image()
+                                detected_faces = _identify_faces_from_image(
+                                    image, detection_close, detection_far, merge_confidence, image_size)
 
-                            faces[packet.stream.index].append(detected_faces)
+                                faces[packet.stream.index].append(detected_faces)
 
-                            if packet.stream == container.video:
-                                progress.update()
+                                if packet.stream == container.video:
+                                    progress.update()
+                        except av.error.InvalidDataError as e:
+                            # Drop the packet
+                            pass
 
     # Interpolate temporaly missing faces
     faces_interpolated = {index: [faces_in_frame.merged for faces_in_frame in faces_for_all_frames]
