@@ -7,6 +7,7 @@ from faceblur.image import EXTENSIONS as IMAGE_EXTENSIONS
 from faceblur.path import is_filename_from_ext_group
 from faceblur.path import walk_files
 from pymediainfo import MediaInfo
+from shutil import rmtree
 from subprocess import check_call
 
 TEST_DATA_FOLDER = "testdata"
@@ -195,6 +196,33 @@ def _prepare_ffmpeg_fate_suite():
         "-vrltLW", "--timeout=60",
         FFMPEG_FATE_SUITE_URL, FFMPEG_FATE_SUITE_FOLDER
     ])
+
+
+def _git_command(folder, *commands):
+    check_call([
+        "git", "-C", folder,
+    ] + list(commands))
+
+
+def _git_fetch_latest(folder):
+    _git_command(folder, "fetch")
+    _git_command(folder, "checkout", "origin/main")
+    _git_command(folder, "reset", "--hard", "origin/main")
+    _git_command(folder, "clean", "-fdx")
+
+
+def _git_prepare(repo, folder):
+    if os.path.isdir(folder):
+        try:
+            _git_fetch_latest(folder)
+            # Fatch was OK, do not clone
+            return
+        except:
+            # fall-back to clean clone
+            rmtree(folder, ignore_errors=True)
+
+    # Clone
+    check_call(["git", "clone", repo, folder])
 
 
 def _prepare_files():
