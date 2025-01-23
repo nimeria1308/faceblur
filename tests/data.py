@@ -185,6 +185,45 @@ FFMPEG_FATE_SKIPPED = [
     "cvid/pcitva15.avi",
     "cvid/laracroft-cinepak-partial.avi",
     "cvid/catfight-cvid-pal8-partial.mov",
+
+    # PIL.UnidentifiedImageError: cannot identify image file
+    "jpg/12bpp.jpg",
+    "heif-conformance/C021.heic",
+
+    # OSError: broken data stream when reading image file
+    "jpeg2000/itu-iso/codestreams_profile0/p0_02.j2k",
+    "jpeg2000/itu-iso/codestreams_profile1/p1_01.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile0/p0_05_bset/ds0_ht_05_b12.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile0/p0_05_bset/ds0_ht_05_b11.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile0/p0_08_bset/ds0_ht_08_b11.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile0/p0_08_bset/ds0_ht_08_b16.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile0/p0_08_bset/ds0_ht_08_b15.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile0/p0_04_bset/ds0_ht_04_b11.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile0/p0_04_bset/ds0_ht_04_b12.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile0/p0_03_bset/ds0_ht_03_b14.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile0/p0_03_bset/ds0_ht_03_b11.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile0/p0_15_bset/ds0_ht_15_b11.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile0/p0_15_bset/ds0_ht_15_b14.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile0/p0_15_bset/ds0_hm_15_b8.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile0/p0_02_bset/ds0_ht_02_b11.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile0/p0_02_bset/ds0_ht_02_b12.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile0/p0_16_bset/ds0_ht_16_b11.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile0/p0_07_bset/ds0_ht_07_b15.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile0/p0_07_bset/ds0_ht_07_b16.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile0/p0_07_bset/ds0_ht_07_b11.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile0/p0_10_bset/ds0_ht_10_b11.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile1/p1_02_bset/ds1_ht_02_b11.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile1/p1_02_bset/ds1_ht_02_b12.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile1/p1_03_bset/ds1_ht_03_b12.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile1/p1_03_bset/ds1_ht_03_b11.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile1/p1_01_bset/ds1_ht_01_b12.j2k",
+    "jpeg2000/itu-iso/htj2k_bsets_profile1/p1_01_bset/ds1_ht_01_b11.j2k",
+    "tiff/lzw_rgbf32le.tif",
+    "tiff/uncompressed_rgbf32le.tif",
+    "tiff/zip_rgbf32le.tif",
+    "tiff/lzw_rgbaf32le.tif",
+    "tiff/zip_rgbaf32le.tif",
+    "tiff/uncompressed_rgbaf32le.tif",
 ]
 
 
@@ -230,6 +269,94 @@ PILLOW_REPO_BRANCH = "main"
 PILLOW_REPO_FOLDER = os.path.join(TEST_DATA_FOLDER, "pillow")
 PILLOW_TEST_FOLDER = os.path.join(PILLOW_REPO_FOLDER, "Tests", "images")
 
+PILLOW_SKIPPED = [
+    # PIL.UnidentifiedImageError: cannot identify image file
+    "not_enough_data.jp2",
+    "zero_height.j2k",
+    "libtiff_segfault.tif",
+    "crash-2020-10-test.tif",
+    "unknown_mode.j2k",
+    "p_8.tga",
+    "negative_size.ppm",
+    "crash-63b1dffefc8c075ddc606c0a2f5fdc15ece78863.tif",
+    "oom-225817ca0f8c663be7ab4b9e717b02c661e66834.tif",
+    "unbound_variable.jp2",
+    "invalid_header_length.jp2",
+    "broken.png",
+    "unknown_compression_method.png",
+    "tiff_overflow_rows_per_strip.tif",
+    "hopper_unknown_pixel_mode.tif",
+
+
+    # ValueError: Unable to seek to frame
+    "seek_too_large.tif",
+
+    # OSError: Truncated File Read
+    "truncated_end_chunk.png",
+
+    # OSError: -2
+    "crash-f46f5b2f43c370fe65706c11449f567ecc345e74.tif",
+    "crash-1185209cf7655b5aed8ae5e77784dfdd18ab59e9.tif",
+    "crash-338516dbd2f0e83caddb8ce256c22db3bd6dc40f.tif",
+    "crash-0c7e0e8e11ce787078f00b5b0ca409a167f070e0.tif",
+    "crash-0e16d3bfb83be87356d026d66919deaefca44dac.tif",
+    "crash-74d2a78403a5a59db1fb0a2b8735ac068a75f6e3.tif",
+    "crash-4f085cc12ece8cde18758d42608bed6a2a2cfb1c.tif",
+    "crash-86214e58da443d2b80820cff9677a38a33dcbbca.tif",
+    "hopper_webp.tif",
+    "crash-0da013a13571cc8eb457a39fee8db18f8a3c7127.tif",
+    "crash-1152ec2d1a1a71395b6f2ce6721c38924d025bf3.tif",
+
+    # OSError: image file is truncated (0 bytes not processed)
+    "ultrahdr.jpg",
+    "cross_scan_line_truncated.tga",
+    "truncated_jpeg.jpg",
+    "l2rgb_read.bmp",
+    "bmp/b/shortfile.bmp",
+
+    # OSError: broken data stream when reading image file
+    "00r1_graya_la.jp2",
+    "crash-ccca68ff40171fdae983d924e127a721cab2bd50.j2k",
+    "crash-4fb027452e6988530aa5dabee76eecacb3b79f8a.j2k",
+    "balloon_eciRGBv2_aware.jp2",
+    "00r0_gray_l.jp2",
+    "crash-7d4c83eb92150fb8f1653a697703ae06ae7c4998.j2k",
+    "crash-d2c93af851d3ab9a19e34503626368b2ecde9c03.j2k",
+
+    # OSError: unrecognized data stream contents when reading image file
+    "broken_data_stream.png",
+
+    # OSError: image file is truncated
+    "truncated_image.png",
+
+    # ValueError: Decompressed data too large for PngImagePlugin.MAX_TEXT_CHUNK
+    "png_decompression_dos.png",
+
+    # OSError: Expected to read 8 bytes but only got 0.
+    "expected_to_read.jp2",
+
+    # APNG
+    "apng/syntax_num_frames_zero.png",
+    "apng/chunk_no_fctl.png",
+
+    # BMP
+    "bmp/g/rgb32bf.bmp",
+    "bmp/q/pal2.bmp",
+    "bmp/q/rgb24png.bmp",
+    "bmp/q/rgb16-231.bmp",
+    "bmp/q/rgba32abf.bmp",
+    "bmp/q/rgb24jpeg.bmp",
+    "bmp/q/pal8os2v2-16.bmp",
+    "bmp/q/pal8oversizepal.bmp",
+    "bmp/q/rgba16-4444.bmp",
+    "bmp/q/rgb32-111110.bmp",
+    "bmp/b/badheadersize.bmp",
+    "bmp/b/badpalettesize.bmp",
+    "bmp/b/badwidth.bmp",
+    "bmp/b/reallybig.bmp",
+    "bmp/b/badbitcount.bmp",
+]
+
 PILLOW_HEIF_REPO = "https://github.com/bigcat88/pillow_heif.git"
 PILLOW_HEIF_REPO_BRANCH = "master"
 PILLOW_HEIF_REPO_FOLDER = os.path.join(TEST_DATA_FOLDER, "pillow-heif")
@@ -247,8 +374,13 @@ _prepare_files()
 
 FFMPEG_FATE_FILES = walk_files(FFMPEG_FATE_SUITE_FOLDER, FFMPEG_FATE_SKIPPED)
 
+PILLOW_FILES = walk_files(PILLOW_TEST_FOLDER, PILLOW_SKIPPED)
+
+PILLOW_HEIF_FILES = walk_files(PILLOW_HEIF_TEST_FOLDER)
+
 # Select only relevant files
-IMAGE_FILES = [f for f in FFMPEG_FATE_FILES if is_filename_from_ext_group(f, IMAGE_EXTENSIONS)]
+IMAGE_FILES = FFMPEG_FATE_FILES + PILLOW_FILES + PILLOW_HEIF_FILES
+IMAGE_FILES = [f for f in IMAGE_FILES if is_filename_from_ext_group(f, IMAGE_EXTENSIONS)]
 
 # Only files with supported extensions, and only containers that actually have video streams
 VIDEO_FILES = [f for f in FFMPEG_FATE_FILES
