@@ -230,11 +230,17 @@ PILLOW_REPO_BRANCH = "main"
 PILLOW_REPO_FOLDER = os.path.join(TEST_DATA_FOLDER, "pillow")
 PILLOW_TEST_FOLDER = os.path.join(PILLOW_REPO_FOLDER, "Tests", "images")
 
+PILLOW_HEIF_REPO = "https://github.com/bigcat88/pillow_heif.git"
+PILLOW_HEIF_REPO_BRANCH = "master"
+PILLOW_HEIF_REPO_FOLDER = os.path.join(TEST_DATA_FOLDER, "pillow-heif")
+PILLOW_HEIF_TEST_FOLDER = os.path.join(PILLOW_HEIF_REPO_FOLDER, "tests", "images", "heif")
+
 
 def _prepare_files():
     os.makedirs(TEST_DATA_FOLDER, exist_ok=True)
     _prepare_ffmpeg_fate_suite()
     _git_prepare(PILLOW_REPO, PILLOW_REPO_FOLDER, PILLOW_REPO_BRANCH)
+    _git_prepare(PILLOW_HEIF_REPO, PILLOW_HEIF_REPO_FOLDER, PILLOW_HEIF_REPO_BRANCH)
 
 
 _prepare_files()
