@@ -65,6 +65,9 @@ class InputContainer(Container):
         self._info = pymediainfo.MediaInfo.parse(filename)
         self._duration = float(self._container.duration / av.time_base) if self._container.duration else 0
 
+        if not self._container.streams.video:
+            raise ValueError(f"File '{filename}' does not contain any video streams")
+
         # Update the thread type for the video decoders
         if thread_type is not None:
             for stream in self._container.streams.video:
