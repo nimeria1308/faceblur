@@ -18,6 +18,7 @@ from faceblur.faces.deidentify import blur_faces
 from faceblur.image import EXTENSIONS as IMAGE_EXTENSIONS
 from faceblur.image import FORMATS as IMAGE_FORMATS
 from faceblur.image import image_open
+from faceblur.path import is_filename_from_ext_group
 from faceblur.threading import TerminatedException, TerminatingCookie
 
 from pillow_heif import register_heif_opener
@@ -34,11 +35,6 @@ class Mode(StrEnum):
 
 
 DEFAULT_MODE = Mode.RECT_BLUR
-
-
-def is_filename_from_ext_group(filename, group):
-    _, ext = os.path.splitext(filename)
-    return ext[1:].lower() in group
 
 
 def _get_filenames_file(filename, on_error):
