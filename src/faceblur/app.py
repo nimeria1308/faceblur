@@ -72,7 +72,7 @@ def get_supported_filenames(inputs, on_error=logging.getLogger(__name__).warning
         else:
             on_error(f"Invalid path: {i}")
 
-    return set(sorted(list(filenames)))
+    return sorted(list(set(filenames)))
 
 
 def _create_output(filename, output, format=None):
