@@ -136,12 +136,15 @@ class OutputContainer(Container):
 
     def add_stream_from_template(self, template: InputStream, encoder=None):
         STREAM_TYPES = {
-            "audio": CopyOutputStream,
             "video": OutputVideoStream,
             # currently subtitles streams are not remuxed, as this needs to be tested
             # currently data streams are not remuxed, as no data encoders are present,
             # and creating a data stream without a codec only appears to work for .ts
         }
+
+        # Mux audio only if supported by container
+        if self._container.default_audio_codec != "none":
+            STREAM_TYPES["audio"] = CopyOutputStream
 
         if template.type not in STREAM_TYPES:
             # Don't handle unsupported stream types
