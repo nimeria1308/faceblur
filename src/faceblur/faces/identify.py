@@ -8,6 +8,7 @@ import tqdm
 from enum import StrEnum
 from faceblur.av.container import InputContainer
 from faceblur.threading import TerminatingCookie
+import face_recognition
 from mediapipe.python.solutions.face_detection import FaceDetection
 from PIL.Image import Image
 
@@ -17,6 +18,9 @@ IDENTIFY_IMAGE_SIZE = 1920
 # Google's deprecated models: https://github.com/google-ai-edge/mediapipe/blob/master/docs/solutions/models.md
 # Updated version (short-range only): https://ai.google.dev/edge/mediapipe/solutions/vision/face_detector
 
+# Face Recognition @ Pypi: https://pypi.org/project/face-recognition/
+# dlib C++ face recognition: http://dlib.net/
+
 
 class Model(StrEnum):
     # Google, Deprecated 2023, up to 2 metres: https://storage.googleapis.com/mediapipe-assets/face_detection_short_range.tflite
@@ -24,6 +28,12 @@ class Model(StrEnum):
 
     # Google, Deprecated 2023, up to 5 metres: https://storage.googleapis.com/mediapipe-assets/face_detection_full_range.tflite
     MEDIA_PIPE_FULL_RANGE = "MEDIA_PIPE_FULL_RANGE"
+
+    # HOG (fast) model
+    DLIB_HOG = "DLIB_HOG"
+
+    # CNN (slow and accurate) model
+    DLIB_CNN = "DLIB_CNN"
 
 
 class Detector:
@@ -70,11 +80,39 @@ class MediaPipeDetector(Detector):
         return faces
 
 
+class DLibDetector(Detector):
+    def __init__(self, model):
+        super().__init__(model)
+
+    def detect(self, image, max_image_size):
+        divisor = _find_divisor(image.width, image.height, max_image_size)
+        if divisor > 1:
+            # Needs to be scaled down
+            image = image.resize((image.width // divisor, image.height // divisor))
+
+        faces = []
+        for detection in face_recognition.face_locations(np.asarray(image), model=self._detector):
+            # Adjust faces if the image was scaled down
+            if divisor > 1:
+                detection = [point * divisor for point in detection]
+
+            face = Box(*detection)
+            faces.append(face)
+
+        return faces
+
+    def close(self):
+        # no-op
+        pass
+
+
 DEFAULT_MODEL = Model.MEDIA_PIPE_FULL_RANGE
 
 DETECTORS = {
     Model.MEDIA_PIPE_SHORT_RANGE: lambda c: MediaPipeDetector(0, c),
     Model.MEDIA_PIPE_FULL_RANGE: lambda c: MediaPipeDetector(1, c),
+    Model.DLIB_HOG: lambda c: DLibDetector("hog"),
+    Model.DLIB_CNN: lambda c: DLibDetector("cnn"),
 }
 
 
