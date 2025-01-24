@@ -12,7 +12,6 @@ from faceblur.av.filter import Filter, Graph
 from faceblur.av.frame import Frame
 from faceblur.av.packet import Packet
 from PIL.Image import Image
-from av.codec.context import Flags
 
 THREAD_TYPES = [
     "SLICE",
@@ -217,10 +216,6 @@ class OutputVideoStream(OutputStream):
         output_stream.codec_context.height = input_stream.height
 
         # FIXME: bit_rate_tolerance is None even after setting it explicitly
-        # Instead of increasing the bit rate to accommodate low-rate encoding
-        # artifacts at beginning of stream for VFR videos, simply request
-        # a two-pass encoding
-        output_stream.codec_context.flags |= Flags.pass1 | Flags.pass2
 
         # Some codecs like mjpeg do not work well with multuthreading
         if encoder in CODECS_NEED_SINGLE_THREAD:
