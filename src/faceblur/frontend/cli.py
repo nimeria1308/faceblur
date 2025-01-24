@@ -9,6 +9,7 @@ from faceblur.app import faceblur
 from faceblur.app import Mode, DEFAULT_MODE
 from faceblur.av.container import FORMATS as CONTAINER_FORMATS
 from faceblur.av.video import ENCODERS, THREAD_TYPES, THREAD_TYPE_DEFAULT
+from faceblur.faces.identify import Model, DEFAULT_MODEL
 from faceblur.image import FORMATS as IMAGE_FORMATS
 
 av.logging.set_level(av.logging.ERROR)
@@ -70,6 +71,15 @@ def main():
                         RECT_BLUR: Uses gaussian blur directly on the face rects.
                         DEBUG: Dumps found faces and draws face boxes onto output.
                         Defaults to {DEFAULT_MODE}""")
+
+    parser.add_argument("--model", "-M",
+                        choices=list(Model),
+                        default=DEFAULT_MODEL,
+                        help=f"""
+                        Detection models:
+                        MEDIA_PIPE_SHORT_RANGE: Google MediaPipe, up to 2 metres.
+                        MEDIA_PIPE_FULL_RANGE: Google MediaPipe, up to 5 metres.
+                        Defaults to {DEFAULT_MODEL}""")
 
     parser.add_argument("--verbose", "-v",
                         action="store_true",
