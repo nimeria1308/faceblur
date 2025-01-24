@@ -82,12 +82,12 @@ class InputContainer(Container):
         self._streams = {stream: InputStream(stream) for stream in self._container.streams if stream.type != "video"}
 
         # video stream infos (tracks in MediaInfo terms)
-        tracks = self._info.video_tracks
+        tracks = self._info.video_tracks + self._info.image_tracks
 
         # If there is only one track and ID, the ID doesn't matter
         if (len(tracks) == 1) and (len(self._container.streams.video) == 1):
             stream = self._container.streams.video[0]
-            self._streams[stream] = InputVideoStream(stream, vars(self._info.video_tracks[0]))
+            self._streams[stream] = InputVideoStream(stream, vars(tracks[0]))
         else:
             # Multiple tracks require matching the track IDs
             # Reshape the tracks into a {id: track}
