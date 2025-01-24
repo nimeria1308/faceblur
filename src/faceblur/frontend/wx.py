@@ -8,6 +8,7 @@ import wx
 from faceblur.app import get_supported_filenames
 from faceblur.app import faceblur
 from faceblur.app import Mode, DEFAULT_MODE
+from faceblur.faces.identify import Model, DEFAULT_MODEL
 from faceblur.progress import Progress
 from faceblur.threading import TerminatingCookie
 
@@ -170,6 +171,12 @@ class MainWindow(wx.Frame):
             style=wx.CB_READONLY | wx.CB_DROPDOWN)
         options_sizer.Add(self._mode, 0, wx.EXPAND | wx.ALL, 5)
 
+        # Models
+        self._model = wx.ComboBox(
+            right_panel, value=DEFAULT_MODEL, choices=list(Model),
+            style=wx.CB_READONLY | wx.CB_DROPDOWN)
+        options_sizer.Add(self._model, 0, wx.EXPAND | wx.ALL, 5)
+
         self._reset_button = wx.Button(right_panel, label="Reset")
         self._reset_button.Bind(wx.EVT_BUTTON, self._on_reset)
         options_sizer.Add(self._reset_button, 0, wx.EXPAND | wx.ALL, 5)
@@ -244,6 +251,7 @@ class MainWindow(wx.Frame):
         self._strength.SetValue(DEFAULT_STRENGTH)
         self._confidence.SetValue(DEFAULT_CONFIDENCE)
         self._mode.SetValue(DEFAULT_MODE)
+        self._model.SetValue(DEFAULT_MODEL)
 
     def _on_browse(self, event):
         with wx.DirDialog(None, "Output folder", style=wx.DD_DEFAULT_STYLE) as dlg:
@@ -312,6 +320,7 @@ class MainWindow(wx.Frame):
         kwargs = {
             "inputs": self._file_list.GetItems(),
             "output": self._output.GetValue(),
+            "model": self._model.GetValue(),
             "strength": self._strength.GetValue(),
             "confidence": self._confidence.GetValue(),
             "total_progress": ProgressWrapper(*self._progress.progress_total),
