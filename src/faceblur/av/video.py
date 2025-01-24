@@ -1,7 +1,9 @@
 # Copyright (C) 2025, Simona Dimitrova
 
 import av
+import av.container
 import av.stream
+import logging
 import math
 import pymediainfo
 
@@ -156,7 +158,16 @@ class OutputVideoStream(OutputStream):
             frame_rate = math.ceil(float(
                 input_stream._info.get("maximum_frame_rate", input_stream._stream.guessed_rate)))
 
-        output_stream = output_container.add_stream(encoder, frame_rate)
+        try:
+            output_stream = output_container.add_stream(encoder, frame_rate)
+        except ValueError as e:
+            logging.getLogger(__name__).warning(f"Could not set encoder '{encoder}': {
+                e}. Using default encoder '{output_container.default_video_codec}'")
+
+            # Provided encoder, or encode from input stream is not supported in this container
+            # Use the default video encoder
+            encoder = output_container.default_video_codec
+            output_stream = output_container.add_stream(encoder, frame_rate)
 
         # Those parameters are from FFMPEG's avcodec_parameters_to_context(), which is
         # called from av.container.output.OutputContainer.add_stream_from_template().
