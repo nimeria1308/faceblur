@@ -140,6 +140,11 @@ class VideoPacket(Packet):
             yield VideoFrame(frame, self.stream)
 
 
+CODECS_NEED_SINGLE_THREAD = [
+    "mjpeg",
+]
+
+
 class OutputVideoStream(OutputStream):
     def __init__(self,
                  output_container: av.container.OutputContainer,
@@ -209,6 +214,10 @@ class OutputVideoStream(OutputStream):
         # in order to take any rotation into account
         output_stream.codec_context.width = input_stream.width
         output_stream.codec_context.height = input_stream.height
+
+        # Some codecs like mjpeg do not work well with multuthreading
+        if encoder in CODECS_NEED_SINGLE_THREAD:
+            output_stream.codec_context.thread_count = 1
 
         super().__init__(output_stream, input_stream)
 
