@@ -232,6 +232,16 @@ FFMPEG_FATE_SKIPPED = [
     "CCITT_fax/G31DS.TIF",
     "CCITT_fax/G4.TIF",
     "CCITT_fax/G4S.TIF",
+
+    # Fail after providing time_base (which is needed for proper VFR handling)
+    # [mpeg2video] MPEG-1/2 does not support 90000/1 fps
+    "mpeg2/mpeg2_field_encoding.ts",
+    "mpeg2/matrixbench_mpeg2.lq1.mpg",
+    "mpeg2/xdcam8mp2-1s_small.ts",
+    "mpeg2/t.mpg",
+    "ac3/mp3ac325-4864-small.ts",
+    "vcr2/VCR2test.avi",
+    "sub/scte20.ts",
 ]
 
 
