@@ -157,9 +157,12 @@ class MainWindow(wx.Frame):
         options_panel = wx.StaticBox(right_panel, label="Options")
         options_sizer = wx.StaticBoxSizer(options_panel, wx.VERTICAL)
 
-        self._strength = wx.SpinCtrlDouble(right_panel, value=str(DEFAULT_STRENGTH), min=0, max=10, inc=0.1)
-        options_sizer.Add(wx.StaticText(right_panel, label="Blur strength"), 0, wx.LEFT | wx.TOP, 5)
-        options_sizer.Add(self._strength, 0, wx.EXPAND | wx.ALL, 5)
+        # Models
+        self._model = wx.ComboBox(
+            right_panel, value=DEFAULT_MODEL, choices=list(Model),
+            style=wx.CB_READONLY | wx.CB_DROPDOWN)
+        options_sizer.Add(wx.StaticText(right_panel, label="Detection model"), 0, wx.LEFT | wx.TOP, 5)
+        options_sizer.Add(self._model, 0, wx.EXPAND | wx.ALL, 5)
 
         self._confidence = wx.SpinCtrlDouble(right_panel, value=str(DEFAULT_CONFIDENCE), min=0, max=1, inc=0.01)
         options_sizer.Add(wx.StaticText(right_panel, label="Detection confidence"), 0, wx.LEFT | wx.TOP, 5)
@@ -169,15 +172,14 @@ class MainWindow(wx.Frame):
         self._mode = wx.ComboBox(
             right_panel, value=DEFAULT_MODE, choices=list(Mode),
             style=wx.CB_READONLY | wx.CB_DROPDOWN)
+        options_sizer.Add(wx.StaticText(right_panel, label="Deidentification mode"), 0, wx.LEFT | wx.TOP, 5)
         options_sizer.Add(self._mode, 0, wx.EXPAND | wx.ALL, 5)
 
-        # Models
-        self._model = wx.ComboBox(
-            right_panel, value=DEFAULT_MODEL, choices=list(Model),
-            style=wx.CB_READONLY | wx.CB_DROPDOWN)
-        options_sizer.Add(self._model, 0, wx.EXPAND | wx.ALL, 5)
+        self._strength = wx.SpinCtrlDouble(right_panel, value=str(DEFAULT_STRENGTH), min=0, max=10, inc=0.1)
+        options_sizer.Add(wx.StaticText(right_panel, label="Blur strength"), 0, wx.LEFT | wx.TOP, 5)
+        options_sizer.Add(self._strength, 0, wx.EXPAND | wx.ALL, 5)
 
-        self._reset_button = wx.Button(right_panel, label="Reset")
+        self._reset_button = wx.Button(right_panel, label="Reset options")
         self._reset_button.Bind(wx.EVT_BUTTON, self._on_reset)
         options_sizer.Add(self._reset_button, 0, wx.EXPAND | wx.ALL, 5)
 
