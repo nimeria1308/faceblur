@@ -12,8 +12,7 @@ from faceblur.av.container import FORMATS as CONTAINER_FORMATS
 from faceblur.av.container import InputContainer, OutputContainer
 from faceblur.av.video import THREAD_TYPE_DEFAULT
 from faceblur.av.video import VideoFrame
-from faceblur.faces.identify import DEFAULT_MODEL
-from faceblur.faces.identify import Model
+from faceblur.faces.model import DEFAULT as DEFAULT_MODEL
 from faceblur.faces.identify import identify_faces_from_image, identify_faces_from_video
 from faceblur.faces.debug import debug_faces
 from faceblur.faces.deidentify import blur_faces
@@ -115,19 +114,38 @@ def _process_video_frame(frame: VideoFrame, faces, strength, mode):
     return frame
 
 
-def _faceblur_image(input_filename, output, model, strength, confidence, format, mode):
+def _get_debug_root(input_filename, output_filename, model, model_options, strength, format):
+    root = {
+        "input": input_filename,
+        "output": output_filename,
+        "model": {
+            "name": model,
+            "options": model_options,
+        },
+        "strength": strength,
+    }
+
+    if format:
+        root["output_format"] = format
+
+    return root
+
+
+def _faceblur_image(input_filename, output, model, model_options, strength, format, mode):
     # Load
     image = image_open(input_filename)
 
     # Find faces
-    faces = identify_faces_from_image(image, model, detection_confidence=confidence)
+    faces = identify_faces_from_image(image, model, model_options=model_options)
 
     output_filename = _create_output(input_filename, output, format)
 
     if mode == Mode.DEBUG:
         # Save face boxes to file
         with open(f"{output_filename}.json", "w") as f:
-            json.dump([face.to_json() for face in faces], f, indent=4)
+            root = _get_debug_root(input_filename, output_filename, model, model_options, strength, format)
+            root["faces"] = [face.to_json() for face in faces]
+            json.dump(root, f, indent=4)
 
         # Draw face boxes
         image = debug_faces(image, faces)
@@ -142,8 +160,9 @@ def _faceblur_image(input_filename, output, model, strength, confidence, format,
 
 
 def _faceblur_video(
-        input_filename, output, model,
-        strength, confidence,
+        input_filename, output,
+        model, model_options,
+        strength,
         format, encoder,
         progress_type,
         thread_type, threads, stop, mode):
@@ -152,16 +171,18 @@ def _faceblur_video(
     # to have the full data to interpolate missing face locations
     with InputContainer(input_filename, thread_type, threads) as input_container:
         faces = identify_faces_from_video(
-            input_container, model, detection_confidence=confidence, progress=progress_type, stop=stop)
+            input_container, model, model_options=model_options, progress=progress_type, stop=stop)
 
     output_filename = _create_output(input_filename, output, format)
     if mode == Mode.DEBUG:
         # Save face boxes to file
         with open(f"{output_filename}.json", "w") as f:
+            root = _get_debug_root(input_filename, output_filename, model, model_options, strength, format)
             faces_json = {index:
                           [[face.to_json() for face in frame] for frame in frames]
                           for index, frames in faces.items()}
-            json.dump(faces_json, f, indent=4)
+            root["streams"] = faces_json
+            json.dump(root, f, indent=4)
 
     # let's reverse the lists so that we would be popping elements, rather than read + delete
     for detections in faces.values():
@@ -208,8 +229,8 @@ def faceblur(
         inputs,
         output,
         model=DEFAULT_MODEL,
+        model_options={},
         strength=1.0,
-        confidence=0.5,
         video_format=None,
         video_encoder=None,
         image_format=None,
@@ -245,10 +266,10 @@ def faceblur(
 
                 if is_filename_from_ext_group(input_filename, IMAGE_EXTENSIONS):
                     # Handle images
-                    _faceblur_image(input_filename, output, model, strength, confidence, image_format, mode)
+                    _faceblur_image(input_filename, output, model, model_options, strength, image_format, mode)
                 else:
                     # Assume video
-                    _faceblur_video(input_filename, output, model, strength, confidence, video_format,
+                    _faceblur_video(input_filename, output, model, model_options, strength, video_format,
                                     video_encoder, file_progress, thread_type, threads, stop, mode)
 
                 if on_done:

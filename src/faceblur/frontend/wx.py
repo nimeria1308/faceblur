@@ -8,7 +8,7 @@ import wx
 from faceblur.app import get_supported_filenames
 from faceblur.app import faceblur
 from faceblur.app import Mode, DEFAULT_MODE
-from faceblur.faces.identify import Model, DEFAULT_MODEL
+from faceblur.faces.model import Model, DEFAULT as DEFAULT_MODEL
 from faceblur.progress import Progress
 from faceblur.threading import TerminatingCookie
 
@@ -317,12 +317,17 @@ class MainWindow(wx.Frame):
 
         self._progress = ProgressDialog(self, "Working...")
 
+        model_options = {}
+        if self._model.GetValue() in [Model.MEDIA_PIPE_SHORT_RANGE, Model.MEDIA_PIPE_FULL_RANGE]:
+            model_options["confidence"] = self._confidence.GetValue()
+            print("confidence", model_options["confidence"])
+
         kwargs = {
             "inputs": self._file_list.GetItems(),
             "output": self._output.GetValue(),
             "model": self._model.GetValue(),
+            "model_options": model_options,
             "strength": self._strength.GetValue(),
-            "confidence": self._confidence.GetValue(),
             "total_progress": ProgressWrapper(*self._progress.progress_total),
             "file_progress": ProgressWrapper(*self._progress.progress_file),
             "on_done": self._on_done,
