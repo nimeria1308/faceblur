@@ -155,16 +155,14 @@ class OutputVideoStream(OutputStream):
             # Use same encoder as decoder
             encoder = input_stream._stream.codec.name
 
-        # We need a concrete frame rate to pass to add_stream
+        # Pass the input frame rate (may be None if VFR)
         frame_rate = input_stream._stream.codec_context.framerate
-        if not frame_rate:
-            # variable frame rate, but some encoders don't seem to work fine with it
-            # so use the guessed one
-            frame_rate = math.ceil(float(
-                input_stream._info.get("maximum_frame_rate", input_stream._stream.guessed_rate)))
+
+        # Make sure to pass the time_base
+        time_base = input_stream._stream.time_base
 
         try:
-            output_stream = output_container.add_stream(encoder, frame_rate)
+            output_stream = output_container.add_stream(encoder, frame_rate, time_base=time_base)
         except ValueError as e:
             logging.getLogger(__name__).warning(f"Could not set encoder '{encoder}': {
                 e}. Using default encoder '{output_container.default_video_codec}'")
@@ -172,7 +170,7 @@ class OutputVideoStream(OutputStream):
             # Provided encoder, or encode from input stream is not supported in this container
             # Use the default video encoder
             encoder = output_container.default_video_codec
-            output_stream = output_container.add_stream(encoder, frame_rate)
+            output_stream = output_container.add_stream(encoder, frame_rate, time_base=time_base)
 
         # Those parameters are from FFMPEG's avcodec_parameters_to_context(), which is
         # called from av.container.output.OutputContainer.add_stream_from_template().
