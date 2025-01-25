@@ -155,8 +155,11 @@ class OutputVideoStream(OutputStream):
             # Use same encoder as decoder
             encoder = input_stream._stream.codec.name
 
-        # Pass the input frame rate (may be None if VFR)
+        # We need a concrete frame rate to pass to add_stream
         frame_rate = input_stream._stream.codec_context.framerate
+        if not frame_rate:
+            # variable frame rate, let's select a meaningful one (acts as minimum frame rate)
+            frame_rate = input_stream._stream.guessed_rate
 
         # Make sure to pass the time_base
         time_base = input_stream._stream.time_base
