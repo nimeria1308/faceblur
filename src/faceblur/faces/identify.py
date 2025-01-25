@@ -105,26 +105,35 @@ def identify_faces_from_video(container: InputContainer,
                               progress=tqdm.tqdm,
                               stop: TerminatingCookie = None):
 
-    faces = {stream.index: [] for stream in container.streams if stream.type == "video"}
+    # A detector for each face
+    detectors = {stream: DETECTORS[model](model_options) for stream in container.streams if stream.type == "video"}
 
-    with DETECTORS[model](model_options) as detector:
+    try:
         with progress(desc="Detecting faces", total=container.video.frames, unit=" frames", leave=False) as progress:
             for packet in container.demux():
                 if packet.stream.type == "video":
+                    detector = detectors[packet.stream]
                     try:
                         for frame in packet.decode():
                             if stop:
                                 stop.throwIfTerminated()
 
-                            detected_faces = detector.detect(frame.to_image())
+                            detector.detect(frame.to_image())
 
-                            faces[packet.stream.index].append(detected_faces)
-
+                            # Update progress if this is the main video stream,
+                            # we are using the main video stream to keep track
                             if packet.stream == container.video:
                                 progress.update()
                     except av.error.InvalidDataError as e:
                         # Drop the packet
                         pass
+
+        # now get the faces from all streams/detectors
+        faces = {stream.index: detector.faces for stream, detector in detectors.items()}
+
+    finally:
+        for detector in detectors.values():
+            detector.close()
 
     # Interpolate temporaly missing faces
     if tracking_confidence:

@@ -36,6 +36,7 @@ class DLibDetector(Detector):
             face = Box(*detection)
             faces.append(face)
 
+        self._faces.append(faces)
         return faces
 
     def close(self):

@@ -32,4 +32,5 @@ class MediaPipeDetector(Detector):
                 face = Box(top, right, bottom, left).intersect(max_box)
                 faces.append(face)
 
+        self._faces.append(faces)
         return faces

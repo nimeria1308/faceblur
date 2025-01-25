@@ -3,6 +3,11 @@
 class Detector:
     def __init__(self, detector):
         self._detector = detector
+        self._faces = []
+
+    @property
+    def faces(self):
+        return list(self._faces)
 
     def __enter__(self):
         return self
