@@ -161,12 +161,36 @@ class MainWindow(wx.Frame):
         self._model = wx.ComboBox(
             right_panel, value=DEFAULT_MODEL, choices=list(Model),
             style=wx.CB_READONLY | wx.CB_DROPDOWN)
+        self._model.Bind(wx.EVT_COMBOBOX, self._update_model_options)
         options_sizer.Add(wx.StaticText(right_panel, label="Detection model"), 0, wx.LEFT | wx.TOP, 5)
         options_sizer.Add(self._model, 0, wx.EXPAND | wx.ALL, 5)
 
-        self._confidence = wx.SpinCtrlDouble(right_panel, value=str(DEFAULT_CONFIDENCE), min=0, max=1, inc=0.01)
-        options_sizer.Add(wx.StaticText(right_panel, label="Detection confidence"), 0, wx.LEFT | wx.TOP, 5)
-        options_sizer.Add(self._confidence, 0, wx.EXPAND | wx.ALL, 5)
+        self._mp_confidence_label = wx.StaticText(right_panel, label="Detection confidence")
+        self._mp_confidence = wx.SpinCtrlDouble(right_panel, value=str(DEFAULT_CONFIDENCE), min=0, max=1, inc=0.01)
+        options_sizer.Add(self._mp_confidence_label, 0, wx.LEFT | wx.TOP, 5)
+        options_sizer.Add(self._mp_confidence, 0, wx.EXPAND | wx.ALL, 5)
+
+        self._dlib_upscale_label = wx.StaticText(right_panel, label="Detection upscale")
+        self._dlib_upscale = wx.SpinCtrl(right_panel, value="1", min=1, max=8,)
+        options_sizer.Add(self._dlib_upscale_label, 0, wx.LEFT | wx.TOP, 5)
+        options_sizer.Add(self._dlib_upscale, 0, wx.EXPAND | wx.ALL, 5)
+
+        mp_controls = [
+            self._mp_confidence_label,
+            self._mp_confidence,
+        ]
+
+        dlib_controls = [
+            self._dlib_upscale_label,
+            self._dlib_upscale,
+        ]
+
+        self._model_options_controls = {
+            Model.MEDIA_PIPE_SHORT_RANGE: mp_controls,
+            Model.MEDIA_PIPE_FULL_RANGE: mp_controls,
+            Model.DLIB_HOG: dlib_controls,
+            Model.DLIB_CNN: dlib_controls,
+        }
 
         # Modes
         self._mode = wx.ComboBox(
@@ -226,9 +250,23 @@ class MainWindow(wx.Frame):
         # Support drag & drop
         self.SetDropTarget(Drop(self))
 
+        # Update visibility on model options
+        self._update_model_options()
+
         # Show the window
         self.Centre()
         self.Show()
+
+    def _update_model_options(self, event=None):
+        # Hide all
+        for cs in self._model_options_controls.values():
+            for c in cs:
+                c.Hide()
+
+        if self._model.GetValue() in self._model_options_controls:
+            for c in self._model_options_controls[self._model.GetValue()]:
+                c.Show()
+        self.Layout()
 
     def _list_on_key_down(self, event):
         # Check for Ctrl+A (Select All)
@@ -250,10 +288,12 @@ class MainWindow(wx.Frame):
             event.Skip()
 
     def _on_reset(self, event):
-        self._strength.SetValue(DEFAULT_STRENGTH)
-        self._confidence.SetValue(DEFAULT_CONFIDENCE)
-        self._mode.SetValue(DEFAULT_MODE)
         self._model.SetValue(DEFAULT_MODEL)
+        self._mp_confidence.SetValue(DEFAULT_CONFIDENCE)
+        self._dlib_upscale.SetValue(1)
+        self._mode.SetValue(DEFAULT_MODE)
+        self._strength.SetValue(DEFAULT_STRENGTH)
+        self._update_model_options()
 
     def _on_browse(self, event):
         with wx.DirDialog(None, "Output folder", style=wx.DD_DEFAULT_STYLE) as dlg:
@@ -321,8 +361,10 @@ class MainWindow(wx.Frame):
 
         model_options = {}
         if self._model.GetValue() in [Model.MEDIA_PIPE_SHORT_RANGE, Model.MEDIA_PIPE_FULL_RANGE]:
-            model_options["confidence"] = self._confidence.GetValue()
-            print("confidence", model_options["confidence"])
+            model_options["confidence"] = self._mp_confidence.GetValue()
+
+        if self._model.GetValue() in [Model.DLIB_HOG, Model.DLIB_CNN]:
+            model_options["upscale"] = self._dlib_upscale.GetValue()
 
         kwargs = {
             "inputs": self._file_list.GetItems(),
