@@ -1,6 +1,7 @@
 # Copyright (C) 2025, Simona Dimitrova
 
 import av.error
+import copy
 import numpy as np
 import tqdm
 
@@ -63,6 +64,8 @@ def _interpolate_boxes(box1, box2, t):
 
 
 def _interpolate_faces(frames, tracking_frame_distance, tracking_confidence):
+    # Make sure to make a deep copy as we are going to be modifying the lists in place
+    frames = copy.deepcopy(frames)
     tracks = _track_faces(frames, tracking_confidence)
 
     previous_faces = [
