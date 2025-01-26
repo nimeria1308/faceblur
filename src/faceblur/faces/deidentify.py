@@ -18,6 +18,9 @@ def _calculate_filter_size(face, strength=1.0):
 
 def blur_faces(image: Image, faces, strength=1.0):
     for face in faces:
+        # denormalise
+        face = face.denormalise(image.width, image.height)
+
         # Crop the face region
         face_image = image.crop((face.left, face.top, face.right, face.bottom))
 

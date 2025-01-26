@@ -22,7 +22,7 @@ DETECTORS = {
 }
 
 
-def _track_faces(frames, min_score=0.5):
+def _track_faces_iou(frames, min_score=0.5):
     tracks = []
 
     for faces in frames:
@@ -56,17 +56,17 @@ def _interpolate(a, b, t):
 
 def _interpolate_boxes(box1, box2, t):
     return Box(
-        int(_interpolate(box1.top, box2.top, t)),
-        int(_interpolate(box1.right, box2.right, t)),
-        int(_interpolate(box1.bottom, box2.bottom, t)),
-        int(_interpolate(box1.left, box2.left, t))
+        _interpolate(box1.top, box2.top, t),
+        _interpolate(box1.right, box2.right, t),
+        _interpolate(box1.bottom, box2.bottom, t),
+        _interpolate(box1.left, box2.left, t)
     )
 
 
 def _interpolate_faces(frames, tracking_frame_distance, tracking_confidence):
     # Make sure to make a deep copy as we are going to be modifying the lists in place
     frames = copy.deepcopy(frames)
-    tracks = _track_faces(frames, tracking_confidence)
+    tracks = _track_faces_iou(frames, tracking_confidence)
 
     previous_faces = [
         (-1, track[0]) for track in tracks
@@ -152,4 +152,5 @@ def identify_faces_from_image(image: Image,
                               model_options={}):
 
     with DETECTORS[model](model_options) as detector:
-        return detector.detect(image)
+        detector.detect(image)
+        return detector.faces[0]

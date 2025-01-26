@@ -48,6 +48,21 @@ class Box:
     def area(self):
         return (self.bottom - self.top + 1) * (self.right - self.left + 1)
 
+    def normalise(self, width, height):
+        return Box(self.top / height, self.right / width, self.bottom / height, self.left / width)
+
+    def denormalise(self, width, height):
+        box = Box(
+            int(self.top * height),
+            int(self.right * width),
+            int(self.bottom * height),
+            int(self.left * width))
+
+        # Make sure the face is within the image
+        max_box = Box(0, width - 1, height - 1, 0)
+
+        return box.intersect(max_box)
+
     def __repr__(self):
         return f"Box(top={self.top}, right={self.right}, bottom={self.bottom}, left={self.left})"
 

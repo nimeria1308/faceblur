@@ -17,19 +17,17 @@ class MediaPipeDetector(Detector):
 
         results = self._detector.process(np.asarray(image))
         if results.detections:
-            max_box = Box(0, image.width - 1, image.height - 1, 0)
-
             for detection in results.detections:
                 box = detection.location_data.relative_bounding_box
 
                 # Adjust the faces as mediapipe returns relative data
-                left = int(box.xmin * image.width)
-                top = int(box.ymin * image.height)
-                right = int((box.xmin + box.width) * image.width) - 1
-                bottom = int((box.ymin + box.height) * image.height) - 1
+                left = box.xmin
+                top = box.ymin
+                right = box.xmin + box.width
+                bottom = box.ymin + box.height
 
                 # Make sure the face box is within the image as detection may return coords out of bounds
-                face = Box(top, right, bottom, left).intersect(max_box)
+                face = Box(top, right, bottom, left)
                 faces.append(face)
 
         self._faces.append(faces)

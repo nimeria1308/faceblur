@@ -14,8 +14,8 @@ def _process_frame(detector, image, frame_number, upscale):
     # Detect faces
     faces = face_recognition.face_locations(np.asarray(image), model=detector, number_of_times_to_upsample=upscale)
 
-    # Wrap in boxes
-    faces = [Box(*face) for face in faces]
+    # Wrap in boxes, but normalise first
+    faces = [Box(*face).normalise(image.width, image.height) for face in faces]
 
     return frame_number, faces
 
@@ -46,7 +46,7 @@ class DLibDetector(Detector):
         # queue up work
         self._futures.add(self._executor.submit(_process_frame,
                                                 self._detector,
-                                                np.asarray(image),
+                                                image,
                                                 self._current_frame,
                                                 self._upscale))
 

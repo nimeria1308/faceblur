@@ -9,6 +9,10 @@ def debug_faces(image: Image, faces, strength=1.0):
 
     # Rectangles are (top-left, bottom_right)
     for face in faces:
+        # denormalise
+        face = face.denormalise(image.width, image.height)
+
+        # draw
         draw.rectangle([(face.left, face.top), (face.right, face.bottom)], fill=None, outline="red", width=3)
 
     return image
