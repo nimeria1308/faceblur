@@ -9,6 +9,10 @@ class Detector:
     def faces(self):
         return list(self._faces)
 
+    @property
+    def encodings(self):
+        return []
+
     def __enter__(self):
         return self
 
