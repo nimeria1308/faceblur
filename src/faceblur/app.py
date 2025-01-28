@@ -175,7 +175,9 @@ def _faceblur_video(
             input_container, model, model_options=model_options, progress=progress_type, stop=stop)
 
     # Clear false positive, fill in false negatives
-    faces = {stream: process_frames(frames_in_stream) for stream, frames_in_stream in faces.items()}
+    faces = {
+        stream: process_frames(frames_in_stream[0], frames_in_stream[1])
+        for stream, frames_in_stream in faces.items()}
 
     output_filename = _create_output(input_filename, output, format)
     if mode == Mode.DEBUG:

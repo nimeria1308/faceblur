@@ -22,8 +22,6 @@ DETECTORS = {
 def identify_faces_from_video(container: InputContainer,
                               model=DEFAULT_MODEL,
                               model_options={},
-                              tracking_frame_distance=30,
-                              tracking_confidence=0.05,
                               progress=tqdm.tqdm,
                               stop: TerminatingCookie = None):
 
@@ -51,7 +49,7 @@ def identify_faces_from_video(container: InputContainer,
                         pass
 
         # now get the faces from all streams/detectors
-        faces = {stream.index: detector.faces for stream, detector in detectors.items()}
+        faces = {stream.index: (detector.faces, detector.encodings) for stream, detector in detectors.items()}
 
     finally:
         for detector in detectors.values():
