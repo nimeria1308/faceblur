@@ -1,7 +1,6 @@
 # Copyright (C) 2025, Simona Dimitrova
 
 import av
-import itertools
 import json
 import logging
 import os
@@ -17,8 +16,7 @@ from faceblur.faces.model import DEFAULT as DEFAULT_MODEL
 from faceblur.faces.identify import identify_faces_from_image, identify_faces_from_video
 from faceblur.faces.debug import debug_faces
 from faceblur.faces.deidentify import blur_faces
-from faceblur.faces.track import track_faces_iou, filter_frames_with_tracks
-from faceblur.faces.interpolate import interpolate_faces
+from faceblur.faces.process import process_frames
 from faceblur.image import EXTENSIONS as IMAGE_EXTENSIONS
 from faceblur.image import FORMATS as IMAGE_FORMATS
 from faceblur.image import image_open
@@ -170,21 +168,6 @@ def _faceblur_video(
         progress_type,
         thread_type, threads, stop, mode):
 
-    def _post_process_faces(frames):
-        # Bin faces into tracks in order to filter false positives and interpolate false negatives
-        tracks, frames_with_tracks = track_faces_iou(frames)
-
-        # Filter out false positives (i.e. faces from unpopular tracks)
-        frames_with_tracks = filter_frames_with_tracks(tracks, frames_with_tracks)
-
-        # Interpolate false negatives (i.e. faces missing from some frames)
-        frames_interpolated = interpolate_faces(tracks, frames_with_tracks)
-
-        # Now mix them
-        assert len(frames) == len(frames_interpolated)
-
-        return list(itertools.zip_longest(frames, frames_interpolated))
-
     # First find the faces. We can't do that on a frame-by-frame basis as it requires
     # to have the full data to interpolate missing face locations
     with InputContainer(input_filename, thread_type, threads) as input_container:
@@ -192,7 +175,7 @@ def _faceblur_video(
             input_container, model, model_options=model_options, progress=progress_type, stop=stop)
 
     # Clear false positive, fill in false negatives
-    faces = {stream: _post_process_faces(frames_in_stream) for stream, frames_in_stream in faces.items()}
+    faces = {stream: process_frames(frames_in_stream) for stream, frames_in_stream in faces.items()}
 
     output_filename = _create_output(input_filename, output, format)
     if mode == Mode.DEBUG:

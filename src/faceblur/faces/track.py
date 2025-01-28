@@ -1,11 +1,11 @@
 # Copyright (C) 2025, Simona Dimitrova
 
 
-DEFAULT_IOU_MIN_SCORE = 0.05
-DEFAULT_MIN_TRACK_RELATIVE_SIZE = 0.25
+IOU_MIN_SCORE = 0.05
+MIN_TRACK_RELATIVE_SIZE = 0.25
 
 
-def track_faces_iou(frames, min_score=DEFAULT_IOU_MIN_SCORE):
+def track_faces_iou(frames, min_score=IOU_MIN_SCORE):
     tracks = []
     frames_with_tracks = []
 
@@ -42,7 +42,7 @@ def track_faces_iou(frames, min_score=DEFAULT_IOU_MIN_SCORE):
 
 def filter_frames_with_tracks(
         tracks, frames_with_tracks,
-        min_track_relative_size=DEFAULT_MIN_TRACK_RELATIVE_SIZE):
+        min_track_relative_size=MIN_TRACK_RELATIVE_SIZE):
 
     min_track_size = int(min_track_relative_size * len(frames_with_tracks))
 

@@ -6,7 +6,7 @@ import numpy as np
 from faceblur.box import Box
 
 
-DEFAULT_TRACKING_FRAME_DISTANCE = 30
+TRACKING_MAX_FRAME_DISTANCE = 30
 
 
 def _interpolate(a, b, t):
@@ -22,7 +22,7 @@ def _interpolate_boxes(box1, box2, t):
     )
 
 
-def interpolate_faces(tracks, frames_with_tracks, tracking_frame_distance=DEFAULT_TRACKING_FRAME_DISTANCE):
+def interpolate_faces(tracks, frames_with_tracks, tracking_max_frame_distance=TRACKING_MAX_FRAME_DISTANCE):
     # Make sure to make a deep copy as we are going to be modifying the lists in place
     frames = copy.deepcopy(frames_with_tracks)
 
@@ -36,7 +36,7 @@ def interpolate_faces(tracks, frames_with_tracks, tracking_frame_distance=DEFAUL
             # When was it last shown?
             previous_frame, previous_face = previous_faces[track_index]
             frame_distance = frame - previous_frame
-            if 1 < frame_distance < tracking_frame_distance:
+            if 1 < frame_distance < tracking_max_frame_distance:
                 frames_to_interpolate = frame_distance - 1
 
                 # interpolate back
