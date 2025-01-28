@@ -7,12 +7,18 @@ from PIL.ImageDraw import Draw
 def debug_faces(image: Image, faces, strength=1.0):
     draw = Draw(image)
 
-    # Rectangles are (top-left, bottom_right)
-    for face in faces:
-        # denormalise
-        face = face.denormalise(image.width, image.height)
+    def _draw(faces, colour, size):
+        for face in faces:
+            # denormalise
+            face = face.denormalise(image.width, image.height)
 
-        # draw
-        draw.rectangle([(face.left, face.top), (face.right, face.bottom)], fill=None, outline="red", width=3)
+            # Draw rectangle: Rectangles are (top-left, bottom_right)
+            draw.rectangle([(face.left, face.top), (face.right, face.bottom)], fill=None, outline=colour, width=size)
+
+    # Original faces
+    _draw(faces[0], "red", 6)
+
+    # Processed faces
+    _draw(faces[1], "blue", 3)
 
     return image
