@@ -2,30 +2,29 @@
 
 import itertools
 
-from faceblur.faces.track import IOU_MIN_SCORE, track_faces_iou
-from faceblur.faces.track import ENCODING_MAX_DISTANCE, track_faces_encodings
+from faceblur.faces.track import track_faces_iou
+from faceblur.faces.track import track_faces_encodings
 from faceblur.faces.track import MIN_TRACK_RELATIVE_SIZE, filter_frames_with_tracks
-from faceblur.faces.interpolate import interpolate_faces
+from faceblur.faces.interpolate import TRACKING_MAX_FRAME_DISTANCE, interpolate_faces
 
 
-def process_faces_in_frames(frames, encodings,
-                            min_iou_score=IOU_MIN_SCORE,
-                            encoding_max_distance=ENCODING_MAX_DISTANCE,
-                            min_track_relative_size=MIN_TRACK_RELATIVE_SIZE):
+def process_faces_in_frames(frames, encodings, score,
+                            min_track_relative_size=MIN_TRACK_RELATIVE_SIZE,
+                            tracking_max_frame_distance=TRACKING_MAX_FRAME_DISTANCE):
 
     # Bin faces into tracks in order to filter false positives and interpolate false negatives
     if encodings:
         # Use advanced tracking through face encodings (supported by model)
-        tracks, frames_with_tracks = track_faces_encodings(frames, encodings, encoding_max_distance)
+        tracks, frames_with_tracks = track_faces_encodings(frames, encodings, score)
     else:
         # Use simple tracking via IoU
-        tracks, frames_with_tracks = track_faces_iou(frames, min_iou_score)
+        tracks, frames_with_tracks = track_faces_iou(frames, score)
 
     # Filter out false positives (i.e. faces from unpopular tracks)
     frames_with_tracks = filter_frames_with_tracks(tracks, frames_with_tracks, min_track_relative_size)
 
     # Interpolate false negatives (i.e. faces missing from some frames)
-    frames_interpolated = interpolate_faces(tracks, frames_with_tracks)
+    frames_interpolated = interpolate_faces(tracks, frames_with_tracks, tracking_max_frame_distance)
 
     # Now mix them
     assert len(frames) == len(frames_interpolated)

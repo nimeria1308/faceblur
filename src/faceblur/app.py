@@ -14,9 +14,11 @@ from faceblur.av.video import THREAD_TYPE_DEFAULT
 from faceblur.av.video import VideoFrame
 from faceblur.faces.model import DEFAULT as DEFAULT_MODEL
 from faceblur.faces.identify import identify_faces_from_image, identify_faces_from_video
+from faceblur.faces.interpolate import TRACKING_MAX_FRAME_DISTANCE
 from faceblur.faces.debug import debug_faces
 from faceblur.faces.deidentify import blur_faces
 from faceblur.faces.process import process_faces_in_frames
+from faceblur.faces.track import IOU_MIN_SCORE, ENCODING_MAX_DISTANCE, MIN_TRACK_RELATIVE_SIZE
 from faceblur.image import EXTENSIONS as IMAGE_EXTENSIONS
 from faceblur.image import FORMATS as IMAGE_FORMATS
 from faceblur.image import image_open
@@ -163,6 +165,7 @@ def _faceblur_image(input_filename, output, model, model_options, strength, form
 def _faceblur_video(
         input_filename, output,
         model, model_options,
+        tracking_options,
         strength,
         format, encoder,
         progress_type,
@@ -174,10 +177,21 @@ def _faceblur_video(
         faces = identify_faces_from_video(
             input_container, model, model_options=model_options, progress=progress_type, stop=stop)
 
-    # Clear false positive, fill in false negatives
-    faces = {
-        stream: process_faces_in_frames(frames_in_stream[0], frames_in_stream[1])
-        for stream, frames_in_stream in faces.items()}
+    if tracking_options:
+        # Use face tracking and interpolation between frames
+
+        if isinstance(tracking_options, bool):
+            # Use defaults when not filled in
+            tracking_options = {
+                "score": ENCODING_MAX_DISTANCE if all([f[1] for f in faces.values()]) else IOU_MIN_SCORE,
+                "min_track_relative_size": MIN_TRACK_RELATIVE_SIZE,
+                "tracking_max_frame_distance": TRACKING_MAX_FRAME_DISTANCE,
+            }
+
+        # Clear false positive, fill in false negatives
+        faces = {
+            stream: process_faces_in_frames(frames_in_stream[0], frames_in_stream[1], **tracking_options)
+            for stream, frames_in_stream in faces.items()}
 
     output_filename = _create_output(input_filename, output, format)
     if mode == Mode.DEBUG:
@@ -239,6 +253,7 @@ def faceblur(
         output,
         model=DEFAULT_MODEL,
         model_options={},
+        tracking_options=True,
         strength=1.0,
         video_format=None,
         video_encoder=None,
@@ -278,8 +293,8 @@ def faceblur(
                     _faceblur_image(input_filename, output, model, model_options, strength, image_format, mode)
                 else:
                     # Assume video
-                    _faceblur_video(input_filename, output, model, model_options, strength, video_format,
-                                    video_encoder, file_progress, thread_type, threads, stop, mode)
+                    _faceblur_video(input_filename, output, model, model_options, tracking_options, strength,
+                                    video_format, video_encoder, file_progress, thread_type, threads, stop, mode)
 
                 if on_done:
                     on_done(input_filename)
