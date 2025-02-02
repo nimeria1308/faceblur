@@ -4,7 +4,7 @@ from PIL.Image import Image
 from PIL.ImageDraw import Draw
 
 
-def debug_faces(image: Image, faces, strength=1.0):
+def debug_faces(image: Image, faces):
     draw = Draw(image)
 
     def _draw(faces, colour, size):
