@@ -9,6 +9,8 @@ from faceblur.app import get_supported_filenames
 from faceblur.app import faceblur
 from faceblur.app import Mode, DEFAULT_MODE
 from faceblur.faces.model import Model, DEFAULT as DEFAULT_MODEL
+from faceblur.faces.process import TRACKING_DURATION
+from faceblur.faces.track import IOU_MIN_SCORE, ENCODING_MAX_DISTANCE, MIN_TRACK_RELATIVE_SIZE
 from faceblur.progress import Progress
 from faceblur.threading import TerminatingCookie
 
@@ -175,14 +177,59 @@ class MainWindow(wx.Frame):
         options_sizer.Add(self._dlib_upscale_label, 0, wx.LEFT | wx.TOP, 5)
         options_sizer.Add(self._dlib_upscale, 0, wx.EXPAND | wx.ALL, 5)
 
+        self._tracking = wx.CheckBox(right_panel, label="Face tracking")
+        self._tracking.SetValue(True)
+        self._tracking.Bind(wx.EVT_CHECKBOX, self._on_tracking)
+        options_sizer.Add(self._tracking, 0, wx.EXPAND | wx.ALL, 5)
+
+        self._iou_min_score_label = wx.StaticText(right_panel, label="Min IoU tracking score")
+        self._iou_min_score = wx.SpinCtrlDouble(right_panel, value=str(IOU_MIN_SCORE), min=0, max=1, inc=0.01)
+        options_sizer.Add(self._iou_min_score_label, 0, wx.LEFT | wx.TOP, 5)
+        options_sizer.Add(self._iou_min_score, 0, wx.EXPAND | wx.ALL, 5)
+
+        self._encoding_max_distance_label = wx.StaticText(right_panel, label="Max encoding distance")
+        self._encoding_max_distance = wx.SpinCtrlDouble(
+            right_panel, value=str(ENCODING_MAX_DISTANCE),
+            min=0, max=1, inc=0.01)
+        options_sizer.Add(self._encoding_max_distance_label, 0, wx.LEFT | wx.TOP, 5)
+        options_sizer.Add(self._encoding_max_distance, 0, wx.EXPAND | wx.ALL, 5)
+
+        self._min_track_relative_size_label = wx.StaticText(right_panel, label="Min track relative size")
+        self._min_track_relative_size = wx.SpinCtrlDouble(
+            right_panel, value=str(MIN_TRACK_RELATIVE_SIZE),
+            min=0, max=1, inc=0.01)
+        options_sizer.Add(self._min_track_relative_size_label, 0, wx.LEFT | wx.TOP, 5)
+        options_sizer.Add(self._min_track_relative_size, 0, wx.EXPAND | wx.ALL, 5)
+
+        self._tracking_duration_label = wx.StaticText(right_panel, label="Tracking duration (s)")
+        self._tracking_duration = wx.SpinCtrlDouble(
+            right_panel, value=str(TRACKING_DURATION), min=0, max=10, inc=0.1)
+        options_sizer.Add(self._tracking_duration_label, 0, wx.LEFT | wx.TOP, 5)
+        options_sizer.Add(self._tracking_duration, 0, wx.EXPAND | wx.ALL, 5)
+
+        self._tracking_controls = [
+            self._iou_min_score_label,
+            self._iou_min_score,
+            self._encoding_max_distance_label,
+            self._encoding_max_distance,
+            self._min_track_relative_size_label,
+            self._min_track_relative_size,
+            self._tracking_duration_label,
+            self._tracking_duration,
+        ]
+
         mp_controls = [
             self._mp_confidence_label,
             self._mp_confidence,
+            self._iou_min_score_label,
+            self._iou_min_score,
         ]
 
         dlib_controls = [
             self._dlib_upscale_label,
             self._dlib_upscale,
+            self._encoding_max_distance_label,
+            self._encoding_max_distance,
         ]
 
         self._model_options_controls = {
@@ -291,9 +338,20 @@ class MainWindow(wx.Frame):
         self._model.SetValue(DEFAULT_MODEL)
         self._mp_confidence.SetValue(DEFAULT_CONFIDENCE)
         self._dlib_upscale.SetValue(1)
+        self._iou_min_score.SetValue(IOU_MIN_SCORE)
+        self._encoding_max_distance.SetValue(ENCODING_MAX_DISTANCE)
+        self._min_track_relative_size.SetValue(MIN_TRACK_RELATIVE_SIZE)
+        self._tracking_duration.SetValue(TRACKING_DURATION)
         self._mode.SetValue(DEFAULT_MODE)
         self._strength.SetValue(DEFAULT_STRENGTH)
+        self._tracking.SetValue(True)
+        self._on_tracking()
         self._update_model_options()
+
+    def _on_tracking(self, event=None):
+        enable = self._tracking.GetValue()
+        for control in self._tracking_controls:
+            control.Enable(enable)
 
     def _on_browse(self, event):
         with wx.DirDialog(None, "Output folder", style=wx.DD_DEFAULT_STYLE) as dlg:
@@ -359,12 +417,19 @@ class MainWindow(wx.Frame):
 
         self._progress = ProgressDialog(self, "Working...")
 
+        tracking = {
+            "min_track_relative_size": self._min_track_relative_size.GetValue(),
+            "tracking_duration": self._tracking_duration.GetValue(),
+        }
+
         model_options = {}
         if self._model.GetValue() in [Model.MEDIA_PIPE_SHORT_RANGE, Model.MEDIA_PIPE_FULL_RANGE]:
             model_options["confidence"] = self._mp_confidence.GetValue()
+            tracking["score"] = self._iou_min_score.GetValue()
 
         if self._model.GetValue() in [Model.DLIB_HOG, Model.DLIB_CNN]:
             model_options["upscale"] = self._dlib_upscale.GetValue()
+            tracking["score"] = self._encoding_max_distance.GetValue()
 
         kwargs = {
             "inputs": self._file_list.GetItems(),
@@ -378,6 +443,7 @@ class MainWindow(wx.Frame):
             "on_error": self._on_error,
             "stop": self._cookie,
             "mode": self._mode.GetValue(),
+            "tracking_options": tracking if self._tracking.GetValue() else False,
             "verbose": self._verbose,
         }
 
