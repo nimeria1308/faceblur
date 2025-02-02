@@ -192,6 +192,10 @@ def _faceblur_video(
         faces = {
             stream: process_faces_in_frames(frames_in_stream[0], frames_in_stream[1], **tracking_options)
             for stream, frames_in_stream in faces.items()}
+    else:
+        faces = {
+            stream: (faces_in_stream[0], faces_in_stream[0])
+            for stream, faces_in_stream in faces.items()}
 
     output_filename = _create_output(input_filename, output, format)
     if mode == Mode.DEBUG:
@@ -208,11 +212,8 @@ def _faceblur_video(
             root["tracking"] = tracking_options
             json.dump(root, f, indent=4)
 
-    # let's reverse the lists so that we would be popping elements, rather than read + delete
-    for detections in faces.values():
-        detections.reverse()
-
     try:
+        frame_index = 0
         with InputContainer(input_filename, thread_type, threads) as input_container:
             with OutputContainer(output_filename, input_container, encoder) as output_container:
                 with progress_type(desc="Encoding", total=input_container.video.frames, unit=" frames", leave=False) as progress:
@@ -224,7 +225,9 @@ def _faceblur_video(
                                     stop.throwIfTerminated()
 
                                 # Get the list of faces for this stream and frame
-                                faces_in_frame = faces[frame.stream.index].pop()
+                                faces_in_frame = faces[frame.stream.index]
+                                faces_in_frame = faces_in_frame[0][frame_index], faces_in_frame[1][frame_index]
+                                frame_index += 1
 
                                 # Process (if necessary)
                                 frame = _process_video_frame(frame, faces_in_frame, strength, mode)
