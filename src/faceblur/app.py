@@ -205,6 +205,7 @@ def _faceblur_video(
                           }
                           for index, frames in faces.items()}
             root["streams"] = faces_json
+            root["tracking"] = tracking_options
             json.dump(root, f, indent=4)
 
     # let's reverse the lists so that we would be popping elements, rather than read + delete
