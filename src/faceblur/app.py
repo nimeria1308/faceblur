@@ -277,7 +277,6 @@ def faceblur(
         av.logging.set_level(av.logging.VERBOSE)
         logging.basicConfig(format=logging_format, level=logging.DEBUG)
     else:
-        av.logging.set_level(av.logging.ERROR)
         logging.basicConfig(format=logging_format)
 
     # Start processing them one by one
