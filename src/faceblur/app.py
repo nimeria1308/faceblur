@@ -14,10 +14,9 @@ from faceblur.av.video import THREAD_TYPE_DEFAULT
 from faceblur.av.video import VideoFrame
 from faceblur.faces.model import DEFAULT as DEFAULT_MODEL
 from faceblur.faces.identify import identify_faces_from_image, identify_faces_from_video
-from faceblur.faces.interpolate import TRACKING_MAX_FRAME_DISTANCE
 from faceblur.faces.debug import debug_faces
 from faceblur.faces.deidentify import blur_faces
-from faceblur.faces.process import process_faces_in_frames
+from faceblur.faces.process import TRACKING_DURATION, process_faces_in_frames
 from faceblur.faces.track import IOU_MIN_SCORE, ENCODING_MAX_DISTANCE, MIN_TRACK_RELATIVE_SIZE
 from faceblur.image import EXTENSIONS as IMAGE_EXTENSIONS
 from faceblur.image import FORMATS as IMAGE_FORMATS
@@ -185,12 +184,12 @@ def _faceblur_video(
             tracking_options = {
                 "score": ENCODING_MAX_DISTANCE if all([f[1] for f in faces.values()]) else IOU_MIN_SCORE,
                 "min_track_relative_size": MIN_TRACK_RELATIVE_SIZE,
-                "tracking_max_frame_distance": TRACKING_MAX_FRAME_DISTANCE,
+                "tracking_duration": TRACKING_DURATION,
             }
 
         # Clear false positive, fill in false negatives
         faces = {
-            stream: process_faces_in_frames(frames_in_stream[0], frames_in_stream[1], **tracking_options)
+            stream: process_faces_in_frames(frames_in_stream[0], frames_in_stream[1], frames_in_stream[2], **tracking_options)
             for stream, frames_in_stream in faces.items()}
     else:
         faces = {

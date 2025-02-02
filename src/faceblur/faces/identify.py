@@ -25,6 +25,9 @@ def identify_faces_from_video(container: InputContainer,
                               progress=tqdm.tqdm,
                               stop: TerminatingCookie = None):
 
+    # Collect FPS data for each stream (needed for calculating tracking duration in seconds)
+    frame_rate = {stream: stream._stream.guessed_rate for stream in container.streams if stream.type == "video"}
+
     # A detector for each face
     detectors = {stream: DETECTORS[model](model_options) for stream in container.streams if stream.type == "video"}
 
@@ -49,7 +52,8 @@ def identify_faces_from_video(container: InputContainer,
                         pass
 
         # now get the faces from all streams/detectors
-        faces = {stream.index: (detector.faces, detector.encodings) for stream, detector in detectors.items()}
+        faces = {stream.index: (detector.faces, detector.encodings,
+                                frame_rate[stream]) for stream, detector in detectors.items()}
 
     finally:
         for detector in detectors.values():
