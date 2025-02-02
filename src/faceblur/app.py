@@ -16,7 +16,7 @@ from faceblur.faces.model import DEFAULT as DEFAULT_MODEL
 from faceblur.faces.identify import identify_faces_from_image, identify_faces_from_video
 from faceblur.faces.debug import debug_faces
 from faceblur.faces.deidentify import blur_faces
-from faceblur.faces.process import process_frames
+from faceblur.faces.process import process_faces_in_frames
 from faceblur.image import EXTENSIONS as IMAGE_EXTENSIONS
 from faceblur.image import FORMATS as IMAGE_FORMATS
 from faceblur.image import image_open
@@ -176,7 +176,7 @@ def _faceblur_video(
 
     # Clear false positive, fill in false negatives
     faces = {
-        stream: process_frames(frames_in_stream[0], frames_in_stream[1])
+        stream: process_faces_in_frames(frames_in_stream[0], frames_in_stream[1])
         for stream, frames_in_stream in faces.items()}
 
     output_filename = _create_output(input_filename, output, format)

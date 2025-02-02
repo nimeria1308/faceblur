@@ -8,10 +8,10 @@ from faceblur.faces.track import MIN_TRACK_RELATIVE_SIZE, filter_frames_with_tra
 from faceblur.faces.interpolate import interpolate_faces
 
 
-def process_frames(frames, encodings,
-                   min_iou_score=IOU_MIN_SCORE,
-                   encoding_max_distance=ENCODING_MAX_DISTANCE,
-                   min_track_relative_size=MIN_TRACK_RELATIVE_SIZE):
+def process_faces_in_frames(frames, encodings,
+                            min_iou_score=IOU_MIN_SCORE,
+                            encoding_max_distance=ENCODING_MAX_DISTANCE,
+                            min_track_relative_size=MIN_TRACK_RELATIVE_SIZE):
 
     # Bin faces into tracks in order to filter false positives and interpolate false negatives
     if encodings:
