@@ -15,10 +15,13 @@ def debug_faces(image: Image, faces):
             # Draw rectangle: Rectangles are (top-left, bottom_right)
             draw.rectangle([(face.left, face.top), (face.right, face.bottom)], fill=None, outline=colour, width=size)
 
+    original_faces, processed_faces = faces
+
     # Original faces
-    _draw(faces[0], "red", 6)
+    _draw(original_faces, "red", 6)
 
     # Processed faces
-    _draw(faces[1], "blue", 3)
+    if processed_faces is not None:
+        _draw(processed_faces, "blue", 3)
 
     return image

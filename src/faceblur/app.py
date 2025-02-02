@@ -107,7 +107,7 @@ def _process_video_frame(frame: VideoFrame, faces, strength, mode):
             image = frame.to_image()
 
             # De-identify via a rectangular gaussian blur (using processed faces)
-            image = blur_faces(image, faces[1], strength)
+            image = blur_faces(image, faces[1] if faces[1] is not None else faces[0], strength)
 
             # PIL.Image -> av.video.frame.VideoFrame
             frame = VideoFrame.from_image(image, frame)
@@ -151,7 +151,7 @@ def _faceblur_image(input_filename, output, model, model_options, strength, form
             json.dump(root, f, indent=4)
 
         # Draw face boxes
-        image = debug_faces(image, faces)
+        image = debug_faces(image, (faces, None))
     elif mode == Mode.RECT_BLUR:
         # De-identify via a rectangular gaussian blur
         image = blur_faces(image, faces, strength)
@@ -194,7 +194,7 @@ def _faceblur_video(
             for stream, frames_in_stream in faces.items()}
     else:
         faces = {
-            stream: (faces_in_stream[0], faces_in_stream[0])
+            stream: (faces_in_stream[0], None)
             for stream, faces_in_stream in faces.items()}
 
     output_filename = _create_output(input_filename, output, format)
@@ -205,7 +205,7 @@ def _faceblur_video(
             faces_json = {index:
                           {
                               "original": [[face.to_json() for face in frame] for frame in frames[0]],
-                              "interpolated": [[face.to_json() for face in frame] for frame in frames[1]],
+                              "processed": [[face.to_json() for face in frame] for frame in frames[1]] if tracking_options else [],
                           }
                           for index, frames in faces.items()}
             root["streams"] = faces_json
@@ -226,7 +226,7 @@ def _faceblur_video(
 
                                 # Get the list of faces for this stream and frame
                                 faces_in_frame = faces[frame.stream.index]
-                                faces_in_frame = faces_in_frame[0][frame_index], faces_in_frame[1][frame_index]
+                                faces_in_frame = faces_in_frame[0][frame_index], faces_in_frame[1][frame_index] if tracking_options else None
                                 frame_index += 1
 
                                 # Process (if necessary)
