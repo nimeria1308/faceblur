@@ -199,7 +199,7 @@ class MainWindow(wx.Frame):
         options_sizer.Add(wx.StaticText(right_panel, label="Deidentification mode"), 0, wx.LEFT | wx.TOP, 5)
         options_sizer.Add(self._mode, 0, wx.EXPAND | wx.ALL, 5)
 
-        self._strength = wx.SpinCtrlDouble(right_panel, value=str(DEFAULT_STRENGTH), min=0, max=10, inc=0.1)
+        self._strength = wx.SpinCtrlDouble(right_panel, value=str(DEFAULT_STRENGTH), min=0.1, max=10, inc=0.1)
         options_sizer.Add(wx.StaticText(right_panel, label="Blur strength"), 0, wx.LEFT | wx.TOP, 5)
         options_sizer.Add(self._strength, 0, wx.EXPAND | wx.ALL, 5)
 
