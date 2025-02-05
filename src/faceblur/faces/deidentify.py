@@ -1,8 +1,7 @@
 # Copyright (C) 2025, Simona Dimitrova
 
 from faceblur.faces.mode import Mode
-from PIL import ImageFilter
-from PIL.Image import Image
+from PIL import Image, ImageFilter, ImageDraw, ImageChops
 
 
 MIN_FILTER_SIZE = 4
@@ -12,12 +11,12 @@ FACE_FILTER_DIVISOR = 20
 
 def _calculate_filter_size(face, strength=1.0):
     return tuple(
-        max(MIN_FILTER_SIZE, min(MAX_FILTER_SIZE, round(f / FACE_FILTER_DIVISOR) * strength))
+        max(MIN_FILTER_SIZE, min(MAX_FILTER_SIZE, int(round(f / FACE_FILTER_DIVISOR) * strength)))
         for f in (face.width, face.height)
     )
 
 
-def blur_faces_rect(image: Image, faces, strength):
+def blur_faces_rect(image: Image.Image, faces, strength):
     for face in faces:
         # denormalise
         face = face.denormalise(image.width, image.height)
@@ -37,8 +36,53 @@ def blur_faces_rect(image: Image, faces, strength):
     return image
 
 
+def blur_faces_graceful(image: Image.Image, faces, strength):
+    for face in faces:
+        # Denormalise
+        face = face.denormalise(image.width, image.height)
+
+        # Calculate blur strength
+        radius = _calculate_filter_size(face, strength)
+
+        # Original dimentions of the face
+        width, height = face.width, face.height
+
+        # Expanded dimensions for the feather effect of the oval mask
+        r_x, r_y = radius
+        width_expanded, height_expanded = width + 2 * r_x, height + 2 * r_y
+
+        # Create an oval image mask for the face region
+        mask = Image.new("L", (width_expanded, height_expanded), 0)
+
+        # Draw a solid ellipse in the mask (account for blur radius)
+        draw = ImageDraw.Draw(mask)
+        draw.ellipse((r_x, r_y, r_x + width, r_y + height), fill=255)
+
+        # Blur the mask to create a gradial effect
+        mask = mask.filter(ImageFilter.BoxBlur(radius=radius))
+
+        # Extract and blur the corresponding face area in the image
+        # TODO: Do we need to blur the entire frame first in order to account
+        # for gaussian effect being bigger than the blur radius
+        face_image = image.crop((
+            face.left - r_x,
+            face.top - r_y,
+            face.right + r_x,
+            face.bottom + r_y
+        ))
+
+        blurred_face_image = face_image.filter(ImageFilter.GaussianBlur(radius=radius))
+
+        # Composite the blurred face on the original image using the oval mask
+        masked_blurred_faces = Image.composite(blurred_face_image, face_image, mask)
+        image.paste(masked_blurred_faces, (face.left - r_x, face.top - r_y))
+
+    return image
+
+
 MODES = {
     Mode.RECT_BLUR: blur_faces_rect,
+    Mode.GRACEFUL_BLUR: blur_faces_graceful,
 }
 
 

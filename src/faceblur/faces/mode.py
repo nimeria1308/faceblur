@@ -5,6 +5,7 @@ from enum import StrEnum
 
 class Mode(StrEnum):
     RECT_BLUR = "RECT_BLUR"
+    GRACEFUL_BLUR = "GRACEFUL_BLUR"
     DEBUG = "DEBUG"
 
 
