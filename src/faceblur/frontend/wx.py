@@ -7,7 +7,7 @@ import wx
 
 from faceblur.app import get_supported_filenames
 from faceblur.app import faceblur
-from faceblur.app import Mode, DEFAULT_MODE
+from faceblur.faces.mode import Mode, DEFAULT as DEFAULT_MODE
 from faceblur.faces.model import Model, DEFAULT as DEFAULT_MODEL
 from faceblur.faces.process import TRACKING_DURATION
 from faceblur.faces.track import IOU_MIN_SCORE, ENCODING_MAX_DISTANCE, MIN_TRACK_RELATIVE_SIZE

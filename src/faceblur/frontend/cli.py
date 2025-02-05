@@ -6,10 +6,10 @@ import os
 
 from faceblur.app import DEFAULT_OUT
 from faceblur.app import faceblur
-from faceblur.app import Mode, DEFAULT_MODE
 from faceblur.av.container import FORMATS as CONTAINER_FORMATS
 from faceblur.av.video import ENCODERS, THREAD_TYPES, THREAD_TYPE_DEFAULT
-from faceblur.faces.identify import Model, DEFAULT_MODEL
+from faceblur.faces.mode import Mode, DEFAULT as DEFAULT_MODE
+from faceblur.faces.model import Model, DEFAULT as DEFAULT_MODEL
 from faceblur.image import FORMATS as IMAGE_FORMATS
 
 av.logging.set_level(av.logging.ERROR)

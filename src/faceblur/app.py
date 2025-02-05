@@ -6,16 +6,18 @@ import logging
 import os
 import tqdm
 
-from enum import StrEnum
 from faceblur.av.container import EXTENSIONS as CONTAINER_EXENTSIONS
 from faceblur.av.container import FORMATS as CONTAINER_FORMATS
 from faceblur.av.container import InputContainer, OutputContainer
 from faceblur.av.video import THREAD_TYPE_DEFAULT
 from faceblur.av.video import VideoFrame
+from faceblur.faces.mode import Mode
+from faceblur.faces.mode import DEFAULT as DEFAULT_MODE
 from faceblur.faces.model import DEFAULT as DEFAULT_MODEL
 from faceblur.faces.identify import identify_faces_from_image, identify_faces_from_video
 from faceblur.faces.debug import debug_faces
 from faceblur.faces.deidentify import blur_faces
+from faceblur.faces.deidentify import MODES as BLUR_MODES
 from faceblur.faces.process import TRACKING_DURATION, process_faces_in_frames
 from faceblur.faces.track import IOU_MIN_SCORE, ENCODING_MAX_DISTANCE, MIN_TRACK_RELATIVE_SIZE
 from faceblur.image import EXTENSIONS as IMAGE_EXTENSIONS
@@ -28,14 +30,6 @@ from faceblur.threading import TerminatedException, TerminatingCookie
 DEFAULT_OUT = "_deident"
 
 SUPPORTED_EXTENSIONS = set(CONTAINER_EXENTSIONS + IMAGE_EXTENSIONS)
-
-
-class Mode(StrEnum):
-    RECT_BLUR = "RECT_BLUR"
-    DEBUG = "DEBUG"
-
-
-DEFAULT_MODE = Mode.RECT_BLUR
 
 
 def _get_filenames_file(filename, on_error):
@@ -100,13 +94,13 @@ def _process_video_frame(frame: VideoFrame, faces, strength, mode):
             # PIL.Image -> av.video.frame.VideoFrame
             frame = VideoFrame.from_image(image, frame)
 
-    elif mode == Mode.RECT_BLUR:
+    elif mode in BLUR_MODES:
         if faces:
             # av.video.frame.VideoFrame -> PIL.Image
             image = frame.to_image()
 
             # De-identify via a rectangular gaussian blur (using processed faces)
-            image = blur_faces(image, faces[1] if faces[1] is not None else faces[0], strength)
+            image = blur_faces(mode, image, faces[1] if faces[1] is not None else faces[0], strength)
 
             # PIL.Image -> av.video.frame.VideoFrame
             frame = VideoFrame.from_image(image, frame)
@@ -151,9 +145,9 @@ def _faceblur_image(input_filename, output, model, model_options, strength, form
 
         # Draw face boxes
         image = debug_faces(image, (faces, None))
-    elif mode == Mode.RECT_BLUR:
+    elif mode in BLUR_MODES:
         # De-identify via a rectangular gaussian blur
-        image = blur_faces(image, faces, strength)
+        image = blur_faces(mode, image, faces, strength)
     else:
         raise ValueError(f"Unsupported mode: {mode}")
 
