@@ -243,12 +243,26 @@ class MainWindow(wx.Frame):
         self._mode = wx.ComboBox(
             right_panel, value=DEFAULT_MODE, choices=list(Mode),
             style=wx.CB_READONLY | wx.CB_DROPDOWN)
+        self._mode.Bind(wx.EVT_COMBOBOX, self._update_mode_options)
         options_sizer.Add(wx.StaticText(right_panel, label="Deidentification mode"), 0, wx.LEFT | wx.TOP, 5)
         options_sizer.Add(self._mode, 0, wx.EXPAND | wx.ALL, 5)
 
+        self._strength_label = wx.StaticText(right_panel, label="Blur strength")
         self._strength = wx.SpinCtrlDouble(right_panel, value=str(DEFAULT_STRENGTH), min=0.1, max=10, inc=0.1)
-        options_sizer.Add(wx.StaticText(right_panel, label="Blur strength"), 0, wx.LEFT | wx.TOP, 5)
+        options_sizer.Add(self._strength_label, 0, wx.LEFT | wx.TOP, 5)
         options_sizer.Add(self._strength, 0, wx.EXPAND | wx.ALL, 5)
+
+        self._mode_options_controls = {
+            Mode.DEBUG: [],
+            Mode.RECT_BLUR: [
+                self._strength_label,
+                self._strength,
+            ],
+            Mode.GRACEFUL_BLUR: [
+                self._strength_label,
+                self._strength,
+            ],
+        }
 
         self._reset_button = wx.Button(right_panel, label="Reset options")
         self._reset_button.Bind(wx.EVT_BUTTON, self._on_reset)
@@ -297,23 +311,32 @@ class MainWindow(wx.Frame):
         # Support drag & drop
         self.SetDropTarget(Drop(self))
 
-        # Update visibility on model options
+        # Update visibility on options
         self._update_model_options()
+        self._update_mode_options()
 
         # Show the window
         self.Centre()
         self.Show()
 
-    def _update_model_options(self, event=None):
+    def _update_options(self, options, value):
         # Hide all
-        for cs in self._model_options_controls.values():
+        for cs in options.values():
             for c in cs:
                 c.Hide()
 
-        if self._model.GetValue() in self._model_options_controls:
-            for c in self._model_options_controls[self._model.GetValue()]:
+        # Show only relevant ones
+        if value in options:
+            for c in options[value]:
                 c.Show()
+
         self.Layout()
+
+    def _update_model_options(self, event=None):
+        self._update_options(self._model_options_controls, self._model.GetValue())
+
+    def _update_mode_options(self, event=None):
+        self._update_options(self._mode_options_controls, self._mode.GetValue())
 
     def _list_on_key_down(self, event):
         # Check for Ctrl+A (Select All)
@@ -347,6 +370,7 @@ class MainWindow(wx.Frame):
         self._tracking.SetValue(True)
         self._on_tracking()
         self._update_model_options()
+        self._update_mode_options()
 
     def _on_tracking(self, event=None):
         enable = self._tracking.GetValue()
