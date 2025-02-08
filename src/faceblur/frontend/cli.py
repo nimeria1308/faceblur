@@ -121,6 +121,7 @@ def main():
         "image_options": image,
         "video_options": video,
         "thread_options": threads,
+        "verbose": args.verbose,
     }
 
     faceblur(**args)
