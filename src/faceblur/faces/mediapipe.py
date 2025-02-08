@@ -2,14 +2,15 @@
 
 import numpy as np
 
-
 from faceblur.box import Box
 from faceblur.faces.detector import Detector
 from mediapipe.python.solutions.face_detection import FaceDetection
 
+CONFIDENCE = 0.5
+
 
 class MediaPipeDetector(Detector):
-    def __init__(self, model, confidence=0.5):
+    def __init__(self, model, confidence=CONFIDENCE):
         super().__init__(FaceDetection(min_detection_confidence=confidence, model_selection=model))
 
     def detect(self, image):

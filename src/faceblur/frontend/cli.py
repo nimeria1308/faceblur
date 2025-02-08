@@ -7,10 +7,27 @@ import os
 from faceblur.app import DEFAULT_OUT
 from faceblur.app import faceblur
 from faceblur.av.container import FORMATS as CONTAINER_FORMATS
-from faceblur.av.video import ENCODERS, THREAD_TYPES, THREAD_TYPE_DEFAULT
+from faceblur.av.video import ENCODERS, THREAD_TYPES, DEFAULT_THREAD_TYPE
 from faceblur.faces.deidentify import MODES as BLUR_MODES
+from faceblur.faces.deidentify import STRENGTH as DEFAULT_STRENGTH
 from faceblur.faces.mode import Mode, DEFAULT as DEFAULT_MODE
 from faceblur.faces.model import Model, DEFAULT as DEFAULT_MODEL
+from faceblur.help import APP as APP_HELP
+from faceblur.help import INPUTS as INPUTS_HELP
+from faceblur.help import OUTPUT as OUTPUT_HELP
+from faceblur.help import MODEL as MODEL_HELP
+from faceblur.help import MODEL_MEDIAPIPE_CONFIDENCE as CONFIDENCE_HELP
+from faceblur.help import MODEL_DLIB_UPSCALING as UPSCALING_HELP
+from faceblur.help import TRACKING_MINIMUM_IOU as IOU_HELP
+from faceblur.help import TRACKING_MAX_FACE_ENCODING_DISTANCE as ENCODING_HELP
+from faceblur.help import MODE as MODE_HELP
+from faceblur.help import BLUR_STRENGTH as STRENGTH_HELP
+from faceblur.help import IMAGE_FORMAT as IMAGE_FORMAT_HELP
+from faceblur.help import VIDEO_FORMAT as VIDEO_FORMAT_HELP
+from faceblur.help import VIDEO_ENCODER as VIDEO_ENCODER_HELP
+from faceblur.help import THREAD_TYPE as THREAD_TYPE_HELP
+from faceblur.help import THREADS as THREADS_HELP
+from faceblur.help import VERBOSE as VERBOSE_HELP
 from faceblur.image import FORMATS as IMAGE_FORMATS
 
 av.logging.set_level(av.logging.ERROR)
@@ -18,73 +35,75 @@ av.logging.set_level(av.logging.ERROR)
 
 def main():
     parser = argparse.ArgumentParser(
-        description="A tool to obfuscate faces from photos and videos via blurring them."
+        description=APP_HELP
     )
 
     parser.add_argument("inputs",
                         nargs="+",
-                        help="Input file(s). May be photos or videos")
+                        help=INPUTS_HELP)
 
     parser.add_argument("--output", "-o",
                         default=DEFAULT_OUT,
-                        help=f"Output folder for the blurred files. Defaults to {DEFAULT_OUT}.")
+                        help=f"{OUTPUT_HELP}. Defaults to {DEFAULT_OUT}.")
+
+    parser.add_argument("--model", "-m",
+                        choices=list(Model),
+                        default=DEFAULT_MODEL,
+                        help=MODEL_HELP)
+
+    parser.add_argument("--model-confidence",
+                        type=float,
+                        help=CONFIDENCE_HELP)
+
+    parser.add_argument("--model-upscaling",
+                        type=int,
+                        help=UPSCALING_HELP)
+
+    parser.add_argument("--disable-tracking",
+                        action="store_false",
+                        help="Disable face tracking for videos. On by default.")
+
+    parser.add_argument("--tracking-min-iou",
+                        type=float,
+                        help=IOU_HELP)
+
+    parser.add_argument("--tracking-max-encoding-distance",
+                        type=float,
+                        help=ENCODING_HELP)
+
+    parser.add_argument("--mode", "-M",
+                        choices=list(Mode),
+                        default=DEFAULT_MODE,
+                        help=MODE_HELP)
 
     parser.add_argument("--strength", "-s",
-                        default=1.0, type=float,
-                        help=f"""
-                        Specify the strength of the deidentification.
-                        It is a multiplier, so 0..1 makes them more recognisable,
-                        while 1+ makes the less so.""")
+                        default=DEFAULT_STRENGTH,
+                        type=float,
+                        help=STRENGTH_HELP)
 
-    parser.add_argument("--video-format", "-f",
+    parser.add_argument("--image-format", "-f",
+                        choices=sorted(list(IMAGE_FORMATS.keys())),
+                        help=IMAGE_FORMAT_HELP)
+
+    parser.add_argument("--video-format", "-F",
                         choices=sorted(list(CONTAINER_FORMATS.keys())),
-                        help="""
-                        Select a custom container format for video files.
-                        If not speciefied it will use the same cotainer as each input.""")
+                        help=VIDEO_FORMAT_HELP)
 
     parser.add_argument("--video-encoder", "-V", choices=ENCODERS,
-                        help="""
-                        Select a custom video encoder.
-                        If not speciefied it will use the same codecs as in the input videos""")
-
-    parser.add_argument("--image-format", "-F",
-                        choices=sorted(list(IMAGE_FORMATS.keys())),
-                        help="""
-                        Select a custom format for image files.
-                        If not speciefied it will use the same format as each input.""")
+                        help=VIDEO_ENCODER_HELP)
 
     parser.add_argument("--thread-type", "-t",
                         choices=THREAD_TYPES,
-                        default=THREAD_TYPE_DEFAULT,
-                        help="PyAV decoder/encoder threading model")
+                        default=DEFAULT_THREAD_TYPE,
+                        help=THREAD_TYPE_HELP)
 
     parser.add_argument("--threads", "-j",
                         default=os.cpu_count(), type=int,
-                        help=f"""
-                        How many threads to use for decoding/encoding video.
-                        Defaults to the number of logical cores: {os.cpu_count()}.""")
-
-    parser.add_argument("--mode", "-m",
-                        choices=list(Mode),
-                        default=DEFAULT_MODE,
-                        help=f"""
-                        Modes of operation:
-                        RECT_BLUR: Uses gaussian blur directly on the face rects.
-                        DEBUG: Dumps found faces and draws face boxes onto output.
-                        Defaults to {DEFAULT_MODE}""")
-
-    parser.add_argument("--model", "-M",
-                        choices=list(Model),
-                        default=DEFAULT_MODEL,
-                        help=f"""
-                        Detection models:
-                        MEDIA_PIPE_SHORT_RANGE: Google MediaPipe, up to 2 metres.
-                        MEDIA_PIPE_FULL_RANGE: Google MediaPipe, up to 5 metres.
-                        Defaults to {DEFAULT_MODEL}""")
+                        help=THREADS_HELP)
 
     parser.add_argument("--verbose", "-v",
                         action="store_true",
-                        help="Enable verbose logging from all components.")
+                        help=VERBOSE_HELP)
 
     args = parser.parse_args()
 

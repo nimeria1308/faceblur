@@ -5,9 +5,10 @@ import face_recognition
 import os
 import numpy as np
 
-
 from faceblur.box import Box
 from faceblur.faces.detector import Detector
+
+UPSCALE = 1
 
 
 def _process_frame(detector, image, frame_number, upscale):
@@ -26,7 +27,7 @@ def _process_frame(detector, image, frame_number, upscale):
 
 
 class DLibDetector(Detector):
-    def __init__(self, model, upscale=1, threads=os.cpu_count()):
+    def __init__(self, model, upscale=UPSCALE, threads=os.cpu_count()):
         super().__init__(model)
         self._upscale = upscale
         self._threads = threads

@@ -19,7 +19,7 @@ THREAD_TYPES = [
     "AUTO,"
 ]
 
-THREAD_TYPE_DEFAULT = "AUTO"
+DEFAULT_THREAD_TYPE = "AUTO"
 
 
 def __check_codec(codec):

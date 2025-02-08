@@ -6,20 +6,20 @@ import pytest
 import tempfile
 
 from faceblur.av.container import InputContainer, OutputContainer
-from faceblur.av.video import THREAD_TYPE_DEFAULT
+from faceblur.av.video import DEFAULT_THREAD_TYPE
 from data import VIDEO_FILES
 
 
 @pytest.mark.parametrize("filename", VIDEO_FILES)
 def test_video_demux(filename):
-    with InputContainer(filename, thread_type=THREAD_TYPE_DEFAULT) as input_container:
+    with InputContainer(filename, thread_type=DEFAULT_THREAD_TYPE) as input_container:
         for packet in input_container.demux():
             assert packet
 
 
 @pytest.mark.parametrize("filename", VIDEO_FILES)
 def test_video_decode(filename):
-    with InputContainer(filename, thread_type=THREAD_TYPE_DEFAULT) as input_container:
+    with InputContainer(filename, thread_type=DEFAULT_THREAD_TYPE) as input_container:
         for packet in input_container.demux():
             assert packet
 
@@ -35,7 +35,7 @@ def test_video_decode(filename):
 @pytest.mark.parametrize("filename", VIDEO_FILES)
 def test_video_recode(filename):
     with tempfile.TemporaryDirectory() as tempdir:
-        with InputContainer(filename, thread_type=THREAD_TYPE_DEFAULT) as input_container:
+        with InputContainer(filename, thread_type=DEFAULT_THREAD_TYPE) as input_container:
             output = os.path.join(tempdir, os.path.basename(filename))
             with OutputContainer(output, input_container) as output_container:
                 for packet in input_container.demux():

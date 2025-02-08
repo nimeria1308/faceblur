@@ -7,6 +7,7 @@ from PIL import Image, ImageFilter, ImageDraw, ImageChops
 MIN_FILTER_SIZE = 4
 MAX_FILTER_SIZE = 1024
 FACE_FILTER_DIVISOR = 20
+STRENGTH = 1.0
 
 
 def _calculate_filter_size(face, strength=1.0):
@@ -86,7 +87,7 @@ MODES = {
 }
 
 
-def blur_faces(mode: Mode, image: Image, faces, strength=1.0):
+def blur_faces(mode: Mode, image: Image, faces, strength=STRENGTH):
     if mode not in MODES:
         raise ValueError(f"Unsupported mode for blurring: {mode}")
 

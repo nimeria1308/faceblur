@@ -9,7 +9,7 @@ import tqdm
 from faceblur.av.container import EXTENSIONS as CONTAINER_EXENTSIONS
 from faceblur.av.container import FORMATS as CONTAINER_FORMATS
 from faceblur.av.container import InputContainer, OutputContainer
-from faceblur.av.video import THREAD_TYPE_DEFAULT
+from faceblur.av.video import DEFAULT_THREAD_TYPE
 from faceblur.av.video import VideoFrame
 from faceblur.faces.mode import Mode
 from faceblur.faces.mode import DEFAULT as DEFAULT_MODE
@@ -166,7 +166,7 @@ def _faceblur_video(
         stop,
         format=None,
         encoder=None,
-        thread_type=THREAD_TYPE_DEFAULT,
+        thread_type=DEFAULT_THREAD_TYPE,
         threads=os.cpu_count()):
 
     # First find the faces. We can't do that on a frame-by-frame basis as it requires
