@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import sys
 import threading
 import wx
 
@@ -141,6 +142,25 @@ class MainWindow(wx.Frame):
         self._verbose = verbose
         self._thread = None
         self._cookie = None
+
+        # Create menu
+        menu = wx.MenuBar()
+
+        # Add Exit to File menu on non-MacOS
+        if sys.platform != "darwin":
+            file_menu = wx.Menu()
+            menu.Append(file_menu, "&File")
+            file_menu.Append(wx.ID_EXIT)
+            self.Bind(wx.EVT_MENU, self._quit, id=wx.ID_EXIT)
+
+        help_menu = wx.Menu()
+        help_menu.Append(wx.ID_ABOUT, "", "About this application")
+        menu.Append(help_menu, "&Help")
+
+        # Bind events
+        self.Bind(wx.EVT_MENU, self._about, id=wx.ID_ABOUT)
+
+        self.SetMenuBar(menu)
 
         # Main panel and sizer
         panel = wx.Panel(self)
@@ -319,6 +339,20 @@ class MainWindow(wx.Frame):
         # Show the window
         self.Centre()
         self.Show()
+
+    def _quit(self, event):
+        self.Close()
+
+    def _about(self, event):
+        message = """
+Faceblur is a Python library and command-line tool to obfuscate faces from photos and videos via blurring them.
+
+It uses the av package to access FFmpeg functionality, and pymediainfo to obtain file and stream metadata, that is not yet available through av (even though it is available in FFmpeg).
+
+Licensed under BSD 3-Clause.
+
+Copyright (C) 2025, Simona Dimitrova"""
+        wx.MessageDialog(None, message, "About", wx.OK | wx.CENTER | wx.ICON_INFORMATION).ShowModal()
 
     def _update_options(self, options, value):
         # Hide all
