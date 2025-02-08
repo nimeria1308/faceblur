@@ -8,6 +8,7 @@ from faceblur.app import DEFAULT_OUT
 from faceblur.app import faceblur
 from faceblur.av.container import FORMATS as CONTAINER_FORMATS
 from faceblur.av.video import ENCODERS, THREAD_TYPES, THREAD_TYPE_DEFAULT
+from faceblur.faces.deidentify import MODES as BLUR_MODES
 from faceblur.faces.mode import Mode, DEFAULT as DEFAULT_MODE
 from faceblur.faces.model import Model, DEFAULT as DEFAULT_MODEL
 from faceblur.image import FORMATS as IMAGE_FORMATS
@@ -52,7 +53,7 @@ def main():
                         Select a custom format for image files.
                         If not speciefied it will use the same format as each input.""")
 
-    parser.add_argument("--thread_type", "-t",
+    parser.add_argument("--thread-type", "-t",
                         choices=THREAD_TYPES,
                         default=THREAD_TYPE_DEFAULT,
                         help="PyAV decoder/encoder threading model")
@@ -85,7 +86,43 @@ def main():
                         action="store_true",
                         help="Enable verbose logging from all components.")
 
-    args = vars(parser.parse_args())
+    args = parser.parse_args()
+
+    # Fix the params
+
+    # Mode
+    mode_options = {}
+
+    if args.mode in BLUR_MODES:
+        mode_options["strength"] = args.strength
+
+    # Image options
+    image = {
+        "format": args.image_format,
+    }
+
+    # Video options
+    video = {
+        "format": args.video_format,
+        "encoder": args.video_encoder,
+    }
+
+    threads = {
+        "thread_type": args.thread_type,
+        "threads": args.threads,
+    }
+
+    args = {
+        "inputs": args.inputs,
+        "output": args.output,
+        "model": args.model,
+        "mode": args.mode,
+        "mode_options": mode_options,
+        "image_options": image,
+        "video_options": video,
+        "thread_options": threads,
+    }
+
     faceblur(**args)
 
 

@@ -80,7 +80,7 @@ def _create_output(filename, output, format=None):
     return os.path.join(output, os.path.basename(filename))
 
 
-def _process_video_frame(frame: VideoFrame, faces, strength, mode):
+def _process_video_frame(frame: VideoFrame, faces, mode, mode_options):
     # do extra processing only if any faces were found
     if mode == Mode.DEBUG:
         if faces:
@@ -100,7 +100,7 @@ def _process_video_frame(frame: VideoFrame, faces, strength, mode):
             image = frame.to_image()
 
             # De-identify via a rectangular gaussian blur (using processed faces)
-            image = blur_faces(mode, image, faces[1] if faces[1] is not None else faces[0], strength)
+            image = blur_faces(mode, image, faces[1] if faces[1] is not None else faces[0], **mode_options)
 
             # PIL.Image -> av.video.frame.VideoFrame
             frame = VideoFrame.from_image(image, frame)
@@ -110,7 +110,7 @@ def _process_video_frame(frame: VideoFrame, faces, strength, mode):
     return frame
 
 
-def _get_debug_root(input_filename, output_filename, model, model_options, strength, format):
+def _get_debug_root(input_filename, output_filename, model, model_options, format=None, encoder=None):
     root = {
         "input": input_filename,
         "output": output_filename,
@@ -118,16 +118,18 @@ def _get_debug_root(input_filename, output_filename, model, model_options, stren
             "name": model,
             "options": model_options,
         },
-        "strength": strength,
     }
 
     if format:
         root["output_format"] = format
 
+    if encoder:
+        root["output_encoder"] = encoder
+
     return root
 
 
-def _faceblur_image(input_filename, output, model, model_options, strength, format, mode):
+def _faceblur_image(input_filename, output, model, model_options, mode, mode_options, format=None):
     # Load
     image = image_open(input_filename)
 
@@ -139,7 +141,7 @@ def _faceblur_image(input_filename, output, model, model_options, strength, form
     if mode == Mode.DEBUG:
         # Save face boxes to file
         with open(f"{output_filename}.json", "w") as f:
-            root = _get_debug_root(input_filename, output_filename, model, model_options, strength, format)
+            root = _get_debug_root(input_filename, output_filename, model, model_options, format)
             root["faces"] = [face.to_json() for face in faces]
             json.dump(root, f, indent=4)
 
@@ -147,7 +149,7 @@ def _faceblur_image(input_filename, output, model, model_options, strength, form
         image = debug_faces(image, (faces, None))
     elif mode in BLUR_MODES:
         # De-identify via a rectangular gaussian blur
-        image = blur_faces(mode, image, faces, strength)
+        image = blur_faces(mode, image, faces, **mode_options)
     else:
         raise ValueError(f"Unsupported mode: {mode}")
 
@@ -159,10 +161,13 @@ def _faceblur_video(
         input_filename, output,
         model, model_options,
         tracking_options,
-        strength,
-        format, encoder,
+        mode, mode_options,
         progress_type,
-        thread_type, threads, stop, mode):
+        stop,
+        format=None,
+        encoder=None,
+        thread_type=THREAD_TYPE_DEFAULT,
+        threads=os.cpu_count()):
 
     # First find the faces. We can't do that on a frame-by-frame basis as it requires
     # to have the full data to interpolate missing face locations
@@ -170,10 +175,9 @@ def _faceblur_video(
         faces = identify_faces_from_video(
             input_container, model, model_options=model_options, progress=progress_type, stop=stop)
 
-    if tracking_options:
-        # Use face tracking and interpolation between frames
-
-        if isinstance(tracking_options, bool):
+    if tracking_options == {}:
+        # Fill in defaults
+        if isinstance(tracking_options, dict):
             # Use defaults when not filled in
             tracking_options = {
                 "score": ENCODING_MAX_DISTANCE if all([f[1] for f in faces.values()]) else IOU_MIN_SCORE,
@@ -181,6 +185,8 @@ def _faceblur_video(
                 "tracking_duration": TRACKING_DURATION,
             }
 
+    if tracking_options:
+        # Use face tracking and interpolation between frames
         # Clear false positive, fill in false negatives
         faces = {
             stream: process_faces_in_frames(frames_in_stream[0], frames_in_stream[1], frames_in_stream[2], **tracking_options)
@@ -194,7 +200,7 @@ def _faceblur_video(
     if mode == Mode.DEBUG:
         # Save face boxes to file
         with open(f"{output_filename}.json", "w") as f:
-            root = _get_debug_root(input_filename, output_filename, model, model_options, strength, format)
+            root = _get_debug_root(input_filename, output_filename, model, model_options, format, encoder)
             faces_json = {index:
                           {
                               "original": [[face.to_json() for face in frame] for frame in frames[0]],
@@ -223,7 +229,7 @@ def _faceblur_video(
                                 frame_index += 1
 
                                 # Process (if necessary)
-                                frame = _process_video_frame(frame, faces_in_frame, strength, mode)
+                                frame = _process_video_frame(frame, faces_in_frame, mode, mode_options)
 
                                 # Encode + mux
                                 output_container.mux(frame)
@@ -250,19 +256,17 @@ def faceblur(
         output,
         model=DEFAULT_MODEL,
         model_options={},
-        tracking_options=True,
-        strength=1.0,
-        video_format=None,
-        video_encoder=None,
-        image_format=None,
-        total_progress=tqdm.tqdm,
-        file_progress=tqdm.tqdm,
-        thread_type=THREAD_TYPE_DEFAULT,
-        threads=os.cpu_count(),
+        tracking_options={},
+        mode=DEFAULT_MODE,
+        mode_options={},
+        image_options={},
+        video_options={},
+        thread_options={},
         on_done=None,
         on_error=None,
         stop: TerminatingCookie = None,
-        mode=DEFAULT_MODE,
+        total_progress=tqdm.tqdm,
+        file_progress=tqdm.tqdm,
         verbose=False):
 
     # WARNING/libav.swscaler           (66753 ): deprecated pixel format used, make sure you did set range correctly
@@ -286,11 +290,13 @@ def faceblur(
 
                 if is_filename_from_ext_group(input_filename, IMAGE_EXTENSIONS):
                     # Handle images
-                    _faceblur_image(input_filename, output, model, model_options, strength, image_format, mode)
+                    _faceblur_image(input_filename, output, model, model_options, mode, mode_options, **image_options)
                 else:
                     # Assume video
-                    _faceblur_video(input_filename, output, model, model_options, tracking_options, strength,
-                                    video_format, video_encoder, file_progress, thread_type, threads, stop, mode)
+                    _faceblur_video(input_filename, output, model, model_options, tracking_options, mode, mode_options,
+                                    file_progress, stop,
+                                    **video_options,
+                                    **thread_options)
 
                 if on_done:
                     on_done(input_filename)

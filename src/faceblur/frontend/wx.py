@@ -7,6 +7,7 @@ import wx
 
 from faceblur.app import get_supported_filenames
 from faceblur.app import faceblur
+from faceblur.faces.deidentify import MODES as BLUR_MODES
 from faceblur.faces.mode import Mode, DEFAULT as DEFAULT_MODE
 from faceblur.faces.model import Model, DEFAULT as DEFAULT_MODEL
 from faceblur.faces.process import TRACKING_DURATION
@@ -455,19 +456,23 @@ class MainWindow(wx.Frame):
             model_options["upscale"] = self._dlib_upscale.GetValue()
             tracking["score"] = self._encoding_max_distance.GetValue()
 
+        mode_options = {}
+        if self._mode.GetValue() in BLUR_MODES:
+            mode_options["strength"] = self._strength.GetValue()
+
         kwargs = {
             "inputs": self._file_list.GetItems(),
             "output": self._output.GetValue(),
             "model": self._model.GetValue(),
             "model_options": model_options,
-            "strength": self._strength.GetValue(),
-            "total_progress": ProgressWrapper(*self._progress.progress_total),
-            "file_progress": ProgressWrapper(*self._progress.progress_file),
+            "tracking_options": tracking if self._tracking.GetValue() else False,
+            "mode": self._mode.GetValue(),
+            "mode_options": mode_options,
             "on_done": self._on_done,
             "on_error": self._on_error,
             "stop": self._cookie,
-            "mode": self._mode.GetValue(),
-            "tracking_options": tracking if self._tracking.GetValue() else False,
+            "total_progress": ProgressWrapper(*self._progress.progress_total),
+            "file_progress": ProgressWrapper(*self._progress.progress_file),
             "verbose": self._verbose,
         }
 
