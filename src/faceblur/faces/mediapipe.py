@@ -2,20 +2,22 @@
 
 import numpy as np
 
-from faceblur.box import Box
-from faceblur.faces.detector import Detector
-from faceblur.faces.model import Model
+import faceblur.box as fb_box
+import faceblur.faces.detector as fb_detector
+import faceblur.faces.model as fb_model
+
 from mediapipe.python.solutions.face_detection import FaceDetection
+
 
 CONFIDENCE = 50
 
 MODELS = [
-    Model.MEDIA_PIPE_SHORT_RANGE,
-    Model.MEDIA_PIPE_FULL_RANGE,
+    fb_model.Model.MEDIA_PIPE_SHORT_RANGE,
+    fb_model.Model.MEDIA_PIPE_FULL_RANGE,
 ]
 
 
-class MediaPipeDetector(Detector):
+class MediaPipeDetector(fb_detector.Detector):
     def __init__(self, model, confidence=CONFIDENCE):
         super().__init__(FaceDetection(min_detection_confidence=confidence/100, model_selection=model))
 
@@ -34,7 +36,7 @@ class MediaPipeDetector(Detector):
                 bottom = box.ymin + box.height
 
                 # Make sure the face box is within the image as detection may return coords out of bounds
-                face = Box(top, right, bottom, left)
+                face = fb_box.Box(top, right, bottom, left)
                 faces.append(face)
 
         self._faces.append(faces)

@@ -6,33 +6,26 @@ import logging
 import os
 import tqdm
 
-from faceblur.av.container import EXTENSIONS as CONTAINER_EXENTSIONS
-from faceblur.av.container import FORMATS as CONTAINER_FORMATS
-from faceblur.av.container import InputContainer, OutputContainer
-from faceblur.av.video import DEFAULT_THREAD_TYPE
-from faceblur.av.video import VideoFrame
-from faceblur.faces.mode import Mode
-from faceblur.faces.mode import DEFAULT as DEFAULT_MODE
-from faceblur.faces.model import DEFAULT as DEFAULT_MODEL
-from faceblur.faces.identify import identify_faces_from_image, identify_faces_from_video
-from faceblur.faces.debug import debug_faces
-from faceblur.faces.obfuscate import blur_faces
-from faceblur.faces.obfuscate import MODES as BLUR_MODES
-from faceblur.faces.process import process_faces_in_frames
-from faceblur.image import EXTENSIONS as IMAGE_EXTENSIONS
-from faceblur.image import FORMATS as IMAGE_FORMATS
-from faceblur.image import image_open
-from faceblur.path import is_filename_from_ext_group
-from faceblur.threading import TerminatedException, TerminatingCookie
+import faceblur.av.container as fb_container
+import faceblur.av.video as fb_video
+import faceblur.faces.identify as fb_identify
+import faceblur.faces.debug as fb_debug
+import faceblur.faces.obfuscate as fb_obfuscate
+import faceblur.faces.process as fb_process
+import faceblur.faces.mode as fb_mode
+import faceblur.faces.model as fb_model
+import faceblur.image as fb_image
+import faceblur.path as fb_path
+import faceblur.threading as fb_threading
 
 
 DEFAULT_OUT = "obfuscated"
 
-SUPPORTED_EXTENSIONS = set(CONTAINER_EXENTSIONS + IMAGE_EXTENSIONS)
+SUPPORTED_EXTENSIONS = set(fb_container.EXTENSIONS + fb_image.EXTENSIONS)
 
 
 def _get_filenames_file(filename, on_error):
-    if not is_filename_from_ext_group(filename, SUPPORTED_EXTENSIONS):
+    if not fb_path.is_filename_from_ext_group(filename, SUPPORTED_EXTENSIONS):
         on_error(f"Skipping unsupported file type: {os.path.basename(filename)}")
         return set()
 
@@ -70,8 +63,8 @@ def _create_output(filename, output, format=None):
     os.makedirs(output, exist_ok=True)
 
     if format:
-        is_image = is_filename_from_ext_group(filename, IMAGE_EXTENSIONS)
-        formats = IMAGE_FORMATS if is_image else CONTAINER_FORMATS
+        is_image = fb_path.is_filename_from_ext_group(filename, fb_image.EXTENSIONS)
+        formats = fb_image.FORMATS if is_image else fb_container.FORMATS
         filename, ext = os.path.splitext(filename)
         ext = formats[format][0]
         filename = f"{filename}.{ext}"
@@ -79,30 +72,30 @@ def _create_output(filename, output, format=None):
     return os.path.join(output, os.path.basename(filename))
 
 
-def _process_video_frame(frame: VideoFrame, faces, mode, mode_options):
+def _process_video_frame(frame: fb_video.VideoFrame, faces, mode, mode_options):
     # do extra processing only if any faces were found
-    if mode == Mode.DEBUG:
+    if mode == fb_mode.Mode.DEBUG:
         if faces:
             # any faces
             # av.video.frame.VideoFrame -> PIL.Image
             image = frame.to_image()
 
             # Draw face boxes
-            image = debug_faces(image, faces)
+            image = fb_debug.debug_faces(image, faces)
 
             # PIL.Image -> av.video.frame.VideoFrame
-            frame = VideoFrame.from_image(image, frame)
+            frame = fb_video.VideoFrame.from_image(image, frame)
 
-    elif mode in BLUR_MODES:
+    elif mode in fb_obfuscate.MODES:
         if faces:
             # av.video.frame.VideoFrame -> PIL.Image
             image = frame.to_image()
 
-            # De-identify via a rectangular gaussian blur (using processed faces)
-            image = blur_faces(mode, image, faces[1] if faces[1] is not None else faces[0], **mode_options)
+            # Obfuscate via a rectangular gaussian blur (using processed faces)
+            image = fb_obfuscate.blur_faces(mode, image, faces[1] if faces[1] is not None else faces[0], **mode_options)
 
             # PIL.Image -> av.video.frame.VideoFrame
-            frame = VideoFrame.from_image(image, frame)
+            frame = fb_video.VideoFrame.from_image(image, frame)
     else:
         raise ValueError(f"Unsupported mode: {mode}")
 
@@ -130,14 +123,14 @@ def _get_debug_root(input_filename, output_filename, model, model_options, forma
 
 def _faceblur_image(input_filename, output, model, model_options, mode, mode_options, format=None):
     # Load
-    image = image_open(input_filename)
+    image = fb_image.image_open(input_filename)
 
     # Find faces
-    faces = identify_faces_from_image(image, model, model_options=model_options)
+    faces = fb_identify.identify_faces_from_image(image, model, model_options=model_options)
 
     output_filename = _create_output(input_filename, output, format)
 
-    if mode == Mode.DEBUG:
+    if mode == fb_mode.Mode.DEBUG:
         # Save face boxes to file
         with open(f"{output_filename}.json", "w") as f:
             root = _get_debug_root(input_filename, output_filename, model, model_options, format)
@@ -145,10 +138,10 @@ def _faceblur_image(input_filename, output, model, model_options, mode, mode_opt
             json.dump(root, f, indent=4)
 
         # Draw face boxes
-        image = debug_faces(image, (faces, None))
-    elif mode in BLUR_MODES:
-        # De-identify via a rectangular gaussian blur
-        image = blur_faces(mode, image, faces, **mode_options)
+        image = fb_debug.debug_faces(image, (faces, None))
+    elif mode in fb_obfuscate.MODES:
+        # Obfuscate via a rectangular gaussian blur
+        image = fb_obfuscate.blur_faces(mode, image, faces, **mode_options)
     else:
         raise ValueError(f"Unsupported mode: {mode}")
 
@@ -165,28 +158,31 @@ def _faceblur_video(
         stop,
         format=None,
         encoder=None,
-        thread_type=DEFAULT_THREAD_TYPE,
+        thread_type=fb_video.DEFAULT_THREAD_TYPE,
         threads=os.cpu_count()):
 
     # First find the faces. We can't do that on a frame-by-frame basis as it requires
     # to have the full data to interpolate missing face locations
-    with InputContainer(input_filename, thread_type, threads) as input_container:
-        faces = identify_faces_from_video(
+    with fb_container.InputContainer(input_filename, thread_type, threads) as input_container:
+        faces = fb_identify.identify_faces_from_video(
             input_container, model, model_options=model_options, progress=progress_type, stop=stop)
 
     if tracking_options:
         # Use face tracking and interpolation between frames
         # Clear false positive, fill in false negatives
         faces = {
-            stream: process_faces_in_frames(frames_in_stream[0], frames_in_stream[1], frames_in_stream[2], **tracking_options)
-            for stream, frames_in_stream in faces.items()}
+            stream: fb_process.process_faces_in_frames(
+                frames_in_stream[0],
+                frames_in_stream[1],
+                frames_in_stream[2],
+                **tracking_options) for stream, frames_in_stream in faces.items()}
     else:
         faces = {
             stream: (faces_in_stream[0], None)
             for stream, faces_in_stream in faces.items()}
 
     output_filename = _create_output(input_filename, output, format)
-    if mode == Mode.DEBUG:
+    if mode == fb_mode.Mode.DEBUG:
         # Save face boxes to file
         with open(f"{output_filename}.json", "w") as f:
             root = _get_debug_root(input_filename, output_filename, model, model_options, format, encoder)
@@ -202,8 +198,8 @@ def _faceblur_video(
 
     try:
         frame_index = 0
-        with InputContainer(input_filename, thread_type, threads) as input_container:
-            with OutputContainer(output_filename, input_container, encoder) as output_container:
+        with fb_container.InputContainer(input_filename, thread_type, threads) as input_container:
+            with fb_container.OutputContainer(output_filename, input_container, encoder) as output_container:
                 with progress_type(desc="Encoding", total=input_container.video.frames, unit=" frames", leave=False) as progress:
                     # Demux the packet from input
                     for packet in input_container.demux():
@@ -240,20 +236,20 @@ def _faceblur_video(
         raise e
 
 
-def faceblur(
+def app(
         inputs,
         output,
-        model=DEFAULT_MODEL,
+        model=fb_model.DEFAULT,
         model_options={},
         tracking_options={},
-        mode=DEFAULT_MODE,
+        mode=fb_mode.DEFAULT,
         mode_options={},
         image_options={},
         video_options={},
         thread_options={},
         on_done=None,
         on_error=None,
-        stop: TerminatingCookie = None,
+        stop: fb_threading.TerminatingCookie = None,
         total_progress=tqdm.tqdm,
         file_progress=tqdm.tqdm,
         verbose=False):
@@ -277,7 +273,7 @@ def faceblur(
                 if stop:
                     stop.throwIfTerminated()
 
-                if is_filename_from_ext_group(input_filename, IMAGE_EXTENSIONS):
+                if fb_path.is_filename_from_ext_group(input_filename, fb_image.EXTENSIONS):
                     # Handle images
                     _faceblur_image(input_filename, output, model, model_options, mode, mode_options, **image_options)
                 else:
@@ -292,7 +288,7 @@ def faceblur(
 
                 progress.update()
 
-            except TerminatedException as tex:
+            except fb_threading.TerminatedException as tex:
                 # Cancelled prematurely
                 if on_done:
                     break

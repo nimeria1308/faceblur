@@ -3,27 +3,28 @@
 import av.error
 import tqdm
 
-from faceblur.faces.model import Model, DEFAULT as DEFAULT_MODEL
-from faceblur.faces.mediapipe import MediaPipeDetector
-from faceblur.faces.dlib import DLibDetector
-from faceblur.av.container import InputContainer
-from faceblur.threading import TerminatingCookie
+import faceblur.av.container as fb_container
+import faceblur.faces.dlib as fb_dlib
+import faceblur.faces.mediapipe as fb_mediapipe
+import faceblur.faces.model as fb_model
+import faceblur.threading as fb_threading
+
 from PIL.Image import Image
 
 
 DETECTORS = {
-    Model.MEDIA_PIPE_SHORT_RANGE: lambda options: MediaPipeDetector(0, **options),
-    Model.MEDIA_PIPE_FULL_RANGE: lambda options: MediaPipeDetector(1, **options),
-    Model.DLIB_HOG: lambda options: DLibDetector("hog", **options),
-    Model.DLIB_CNN: lambda options: DLibDetector("cnn", **options),
+    fb_model.Model.MEDIA_PIPE_SHORT_RANGE: lambda options: fb_mediapipe.MediaPipeDetector(0, **options),
+    fb_model.Model.MEDIA_PIPE_FULL_RANGE: lambda options: fb_mediapipe.MediaPipeDetector(1, **options),
+    fb_model.Model.DLIB_HOG: lambda options: fb_dlib.DLibDetector("hog", **options),
+    fb_model.Model.DLIB_CNN: lambda options: fb_dlib.DLibDetector("cnn", **options),
 }
 
 
-def identify_faces_from_video(container: InputContainer,
-                              model=DEFAULT_MODEL,
+def identify_faces_from_video(container: fb_container.InputContainer,
+                              model=fb_model.DEFAULT,
                               model_options={},
                               progress=tqdm.tqdm,
-                              stop: TerminatingCookie = None):
+                              stop: fb_threading.TerminatingCookie = None):
 
     # Collect FPS data for each stream (needed for calculating tracking duration in seconds)
     frame_rate = {stream: stream._stream.guessed_rate for stream in container.streams if stream.type == "video"}
@@ -63,7 +64,7 @@ def identify_faces_from_video(container: InputContainer,
 
 
 def identify_faces_from_image(image: Image,
-                              model=DEFAULT_MODEL,
+                              model=fb_model.DEFAULT,
                               model_options={}):
 
     with DETECTORS[model](model_options) as detector:

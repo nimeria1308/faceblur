@@ -5,15 +5,16 @@ import face_recognition
 import os
 import numpy as np
 
-from faceblur.box import Box
-from faceblur.faces.detector import Detector
-from faceblur.faces.model import Model
+import faceblur.box as fb_box
+import faceblur.faces.detector as fb_detector
+import faceblur.faces.model as fb_model
+
 
 UPSCALE = 1
 
 MODELS = [
-    Model.DLIB_HOG,
-    Model.DLIB_CNN,
+    fb_model.Model.DLIB_HOG,
+    fb_model.Model.DLIB_CNN,
 ]
 
 
@@ -27,12 +28,12 @@ def _process_frame(detector, image, frame_number, upscale):
     encodings = face_recognition.face_encodings(arr, faces, model="large")
 
     # Wrap in boxes, but normalise first
-    faces = [Box(*face).normalise(image.width, image.height) for face in faces]
+    faces = [fb_box.Box(*face).normalise(image.width, image.height) for face in faces]
 
     return frame_number, faces, encodings
 
 
-class DLibDetector(Detector):
+class DLibDetector(fb_detector.Detector):
     def __init__(self, model, upscale=UPSCALE, threads=os.cpu_count()):
         super().__init__(model)
         self._upscale = upscale

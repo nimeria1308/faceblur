@@ -1,6 +1,7 @@
 # Copyright (C) 2025, Simona Dimitrova
 
-from faceblur.faces.mode import Mode
+import faceblur.faces.mode as fb_mode
+
 from PIL import Image, ImageFilter, ImageDraw, ImageChops
 
 
@@ -82,12 +83,12 @@ def blur_faces_graceful(image: Image.Image, faces, strength):
 
 
 MODES = {
-    Mode.RECT_BLUR: blur_faces_rect,
-    Mode.GRACEFUL_BLUR: blur_faces_graceful,
+    fb_mode.Mode.RECT_BLUR: blur_faces_rect,
+    fb_mode.Mode.GRACEFUL_BLUR: blur_faces_graceful,
 }
 
 
-def blur_faces(mode: Mode, image: Image, faces, strength=STRENGTH):
+def blur_faces(mode: fb_mode.Mode, image: Image, faces, strength=STRENGTH):
     if mode not in MODES:
         raise ValueError(f"Unsupported mode for blurring: {mode}")
 

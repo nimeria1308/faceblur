@@ -6,39 +6,17 @@ import sys
 import threading
 import wx
 
-from faceblur.app import get_supported_filenames
-from faceblur.app import faceblur
-from faceblur.faces.obfuscate import MODES as BLUR_MODES
-from faceblur.faces.obfuscate import STRENGTH as DEFAULT_STRENGTH
-from faceblur.faces.dlib import MODELS as DLIB_MODELS
-from faceblur.faces.dlib import UPSCALE as DEFAULT_UPSCALE
-from faceblur.help import APP as APP_HELP
-from faceblur.help import INPUTS as INPUTS_HELP
-from faceblur.help import OUTPUT as OUTPUT_HELP
-from faceblur.help import MODEL as MODEL_HELP
-from faceblur.help import MODEL_MEDIAPIPE_CONFIDENCE as CONFIDENCE_HELP
-from faceblur.help import MODEL_DLIB_UPSCALING as UPSCALING_HELP
-from faceblur.help import TRACKING_MINIMUM_IOU as IOU_HELP
-from faceblur.help import TRACKING_MAX_FACE_ENCODING_DISTANCE as ENCODING_HELP
-from faceblur.help import TRACKING_DURATION as TRACKING_DURATION_HELP
-from faceblur.help import TRACKING_MIN_FACE_DURATION as MIN_FACE_DURATION_HELP
-from faceblur.help import MODE as MODE_HELP
-from faceblur.help import BLUR_STRENGTH as STRENGTH_HELP
-from faceblur.help import IMAGE_FORMAT as IMAGE_FORMAT_HELP
-from faceblur.help import VIDEO_FORMAT as VIDEO_FORMAT_HELP
-from faceblur.help import VIDEO_ENCODER as VIDEO_ENCODER_HELP
-from faceblur.help import THREAD_TYPE as THREAD_TYPE_HELP
-from faceblur.help import THREADS as THREADS_HELP
-from faceblur.help import VERBOSE as VERBOSE_HELP
-from faceblur.image import FORMATS as IMAGE_FORMATS
-from faceblur.faces.mediapipe import MODELS as MP_MODELS
-from faceblur.faces.mediapipe import CONFIDENCE as DEFAULT_CONFIDENCE
-from faceblur.faces.mode import Mode, DEFAULT as DEFAULT_MODE
-from faceblur.faces.model import Model, DEFAULT as DEFAULT_MODEL
-from faceblur.faces.process import TRACKING_DURATION, MIN_FACE_DURATION
-from faceblur.faces.track import IOU_MIN_OVERLAP, ENCODING_MAX_DISTANCE
-from faceblur.progress import Progress
-from faceblur.threading import TerminatingCookie
+import faceblur.app as fb_app
+import faceblur.help as fb_help
+import faceblur.faces.dlib as fb_dlib
+import faceblur.faces.mediapipe as fb_mediapipe
+import faceblur.faces.mode as fb_mode
+import faceblur.faces.model as fb_model
+import faceblur.faces.obfuscate as fb_obfuscate
+import faceblur.faces.process as fb_process
+import faceblur.faces.track as fb_track
+import faceblur.progress as fb_progress
+import faceblur.threading as fb_threading
 
 
 class Drop(wx.FileDropTarget):
@@ -49,7 +27,7 @@ class Drop(wx.FileDropTarget):
     def OnDropFiles(self, x, y, filenames):
         def on_error(message):
             wx.MessageDialog(None, message, "Warning", wx.OK | wx.CENTER | wx.ICON_WARNING).ShowModal()
-        filenames = get_supported_filenames(filenames, on_error)
+        filenames = fb_app.get_supported_filenames(filenames, on_error)
 
         for filename in filenames:
             filename = os.path.abspath(filename)
@@ -61,7 +39,7 @@ class Drop(wx.FileDropTarget):
         return True
 
 
-class ProgressWrapper(Progress):
+class ProgressWrapper(fb_progress.Progress):
     def __init__(self, progress, status):
         self._progress = progress
         self._status = status
@@ -227,20 +205,20 @@ class MainWindow(wx.Frame):
         options_sizer.Add(model_options_sizer, flag=wx.ALL | wx.EXPAND, border=10)
 
         self._model = wx.ComboBox(
-            model_options_panel, value=DEFAULT_MODEL, choices=list(Model),
+            model_options_panel, value=fb_model.DEFAULT, choices=list(fb_model.Model),
             style=wx.CB_READONLY | wx.CB_DROPDOWN)
         self._model.Bind(wx.EVT_COMBOBOX, self._update_model_options)
-        add_element(self._model, model_options_panel, model_options_sizer, "Detection model", MODEL_HELP)
+        add_element(self._model, model_options_panel, model_options_sizer, "Detection model", fb_help.MODEL)
 
         self._mp_confidence_label = wx.StaticText(model_options_panel, label="Detection confidence (%)")
-        self._mp_confidence = wx.SpinCtrl(model_options_panel, value=str(DEFAULT_CONFIDENCE))
+        self._mp_confidence = wx.SpinCtrl(model_options_panel, value=str(fb_mediapipe.CONFIDENCE))
         add_element(self._mp_confidence, model_options_panel, model_options_sizer,
-                    self._mp_confidence_label, CONFIDENCE_HELP)
+                    self._mp_confidence_label, fb_help.MODEL_MEDIAPIPE_CONFIDENCE)
 
         self._dlib_upscale_label = wx.StaticText(model_options_panel, label="Detection upscale (x)")
-        self._dlib_upscale = wx.SpinCtrl(model_options_panel, value=str(DEFAULT_UPSCALE), min=1, max=8)
+        self._dlib_upscale = wx.SpinCtrl(model_options_panel, value=str(fb_dlib.UPSCALE), min=1, max=8)
         add_element(self._dlib_upscale, model_options_panel, model_options_sizer,
-                    self._dlib_upscale_label, UPSCALING_HELP)
+                    self._dlib_upscale_label, fb_help.MODEL_DLIB_UPSCALING)
 
         # Panel containg tracking options
         tracking_options_panel = wx.StaticBox(right_panel, label="Face tracking")
@@ -254,27 +232,28 @@ class MainWindow(wx.Frame):
         tracking_options_sizer.Add(self._tracking, 0, wx.EXPAND | wx.ALL, 5)
 
         self._iou_min_overlap_label = wx.StaticText(tracking_options_panel, label="Min overlap for IoU (%)")
-        self._iou_min_overlap = wx.SpinCtrl(tracking_options_panel, value=str(IOU_MIN_OVERLAP))
+        self._iou_min_overlap = wx.SpinCtrl(tracking_options_panel, value=str(fb_track.IOU_MIN_OVERLAP))
         add_element(self._iou_min_overlap, tracking_options_panel, tracking_options_sizer,
-                    self._iou_min_overlap_label, IOU_HELP)
+                    self._iou_min_overlap_label, fb_help.TRACKING_MINIMUM_IOU)
 
         self._encoding_max_distance_label = wx.StaticText(tracking_options_panel, label="Max encoding distance (%)")
-        self._encoding_max_distance = wx.SpinCtrlDouble(tracking_options_panel, value=str(ENCODING_MAX_DISTANCE))
+        self._encoding_max_distance = wx.SpinCtrlDouble(
+            tracking_options_panel, value=str(fb_track.ENCODING_MAX_DISTANCE))
         add_element(self._encoding_max_distance, tracking_options_panel, tracking_options_sizer,
-                    self._encoding_max_distance_label, ENCODING_HELP)
+                    self._encoding_max_distance_label, fb_help.TRACKING_MAX_FACE_ENCODING_DISTANCE)
 
         self._min_track_face_duration_label = wx.StaticText(tracking_options_panel, label="Min face duration (s)")
         self._min_track_face_duration = wx.SpinCtrlDouble(
-            tracking_options_panel, value=str(MIN_FACE_DURATION),
+            tracking_options_panel, value=str(fb_process.MIN_FACE_DURATION),
             min=0, max=10, inc=0.1)
         add_element(self._min_track_face_duration, tracking_options_panel, tracking_options_sizer,
-                    self._min_track_face_duration_label, MIN_FACE_DURATION_HELP)
+                    self._min_track_face_duration_label, fb_help.TRACKING_MIN_FACE_DURATION)
 
         self._tracking_duration_label = wx.StaticText(tracking_options_panel, label="Tracking duration (s)")
         self._tracking_duration = wx.SpinCtrlDouble(
-            tracking_options_panel, value=str(TRACKING_DURATION), min=0, max=10, inc=0.1)
+            tracking_options_panel, value=str(fb_process.TRACKING_DURATION), min=0, max=10, inc=0.1)
         add_element(self._tracking_duration, tracking_options_panel, tracking_options_sizer,
-                    self._tracking_duration_label, TRACKING_DURATION_HELP)
+                    self._tracking_duration_label, fb_help.TRACKING_DURATION)
 
         self._tracking_controls = [
             self._iou_min_overlap_label,
@@ -302,10 +281,10 @@ class MainWindow(wx.Frame):
         ]
 
         self._model_options_controls = {
-            Model.MEDIA_PIPE_SHORT_RANGE: mp_controls,
-            Model.MEDIA_PIPE_FULL_RANGE: mp_controls,
-            Model.DLIB_HOG: dlib_controls,
-            Model.DLIB_CNN: dlib_controls,
+            fb_model.Model.MEDIA_PIPE_SHORT_RANGE: mp_controls,
+            fb_model.Model.MEDIA_PIPE_FULL_RANGE: mp_controls,
+            fb_model.Model.DLIB_HOG: dlib_controls,
+            fb_model.Model.DLIB_CNN: dlib_controls,
         }
 
         # Modes
@@ -316,23 +295,23 @@ class MainWindow(wx.Frame):
         options_sizer.Add(mode_options_sizer, flag=wx.ALL | wx.EXPAND, border=10)
 
         self._mode = wx.ComboBox(
-            mode_options_panel, value=DEFAULT_MODE, choices=list(Mode),
+            mode_options_panel, value=fb_mode.DEFAULT, choices=list(fb_mode.Mode),
             style=wx.CB_READONLY | wx.CB_DROPDOWN)
         self._mode.Bind(wx.EVT_COMBOBOX, self._update_mode_options)
-        add_element(self._mode, mode_options_panel, mode_options_sizer, "Mode", MODE_HELP)
+        add_element(self._mode, mode_options_panel, mode_options_sizer, "Mode", fb_help.MODE)
 
         self._strength_label = wx.StaticText(mode_options_panel, label="Blur strength (%)")
-        self._strength = wx.SpinCtrl(mode_options_panel, value=str(DEFAULT_STRENGTH), min=1, max=1000)
+        self._strength = wx.SpinCtrl(mode_options_panel, value=str(fb_obfuscate.STRENGTH), min=1, max=1000)
         add_element(self._strength, mode_options_panel, mode_options_sizer,
-                    self._strength_label, STRENGTH_HELP)
+                    self._strength_label, fb_help.BLUR_STRENGTH)
 
         self._mode_options_controls = {
-            Mode.DEBUG: [],
-            Mode.RECT_BLUR: [
+            fb_mode.Mode.DEBUG: [],
+            fb_mode.Mode.RECT_BLUR: [
                 self._strength_label,
                 self._strength,
             ],
-            Mode.GRACEFUL_BLUR: [
+            fb_mode.Mode.GRACEFUL_BLUR: [
                 self._strength_label,
                 self._strength,
             ],
@@ -441,15 +420,15 @@ Copyright (C) 2025, Simona Dimitrova"""
             event.Skip()
 
     def _on_reset(self, event):
-        self._model.SetValue(DEFAULT_MODEL)
-        self._mp_confidence.SetValue(DEFAULT_CONFIDENCE)
+        self._model.SetValue(fb_model.DEFAULT)
+        self._mp_confidence.SetValue(fb_mediapipe.CONFIDENCE)
         self._dlib_upscale.SetValue(1)
-        self._iou_min_overlap.SetValue(IOU_MIN_OVERLAP)
-        self._encoding_max_distance.SetValue(ENCODING_MAX_DISTANCE)
-        self._min_track_face_duration.SetValue(MIN_FACE_DURATION)
-        self._tracking_duration.SetValue(TRACKING_DURATION)
-        self._mode.SetValue(DEFAULT_MODE)
-        self._strength.SetValue(DEFAULT_STRENGTH)
+        self._iou_min_overlap.SetValue(fb_track.IOU_MIN_OVERLAP)
+        self._encoding_max_distance.SetValue(fb_track.ENCODING_MAX_DISTANCE)
+        self._min_track_face_duration.SetValue(fb_process.MIN_FACE_DURATION)
+        self._tracking_duration.SetValue(fb_process.TRACKING_DURATION)
+        self._mode.SetValue(fb_mode.DEFAULT)
+        self._strength.SetValue(fb_obfuscate.STRENGTH)
         self._tracking.SetValue(True)
         self._on_tracking()
         self._update_model_options()
@@ -520,7 +499,7 @@ Copyright (C) 2025, Simona Dimitrova"""
             )} is not an existing folder.", "Error", wx.OK | wx.CENTER | wx.ICON_ERROR).ShowModal()
             return
 
-        self._cookie = TerminatingCookie()
+        self._cookie = fb_threading.TerminatingCookie()
 
         self._progress = ProgressDialog(self, "Working...")
 
@@ -530,16 +509,16 @@ Copyright (C) 2025, Simona Dimitrova"""
         }
 
         model_options = {}
-        if self._model.GetValue() in MP_MODELS:
+        if self._model.GetValue() in fb_mediapipe.MODELS:
             model_options["confidence"] = self._mp_confidence.GetValue()
             tracking["score"] = self._iou_min_overlap.GetValue()
 
-        if self._model.GetValue() in DLIB_MODELS:
+        if self._model.GetValue() in fb_dlib.MODELS:
             model_options["upscale"] = self._dlib_upscale.GetValue()
             tracking["score"] = self._encoding_max_distance.GetValue()
 
         mode_options = {}
-        if self._mode.GetValue() in BLUR_MODES:
+        if self._mode.GetValue() in fb_obfuscate.MODES:
             mode_options["strength"] = self._strength.GetValue()
 
         kwargs = {
@@ -558,7 +537,7 @@ Copyright (C) 2025, Simona Dimitrova"""
             "verbose": self._verbose,
         }
 
-        self._thread = threading.Thread(target=faceblur, kwargs=kwargs)
+        self._thread = threading.Thread(target=fb_app.app, kwargs=kwargs)
         self._thread.start()
 
         self._progress.ShowModal()

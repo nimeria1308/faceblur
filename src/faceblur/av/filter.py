@@ -2,7 +2,7 @@
 
 import av.stream
 
-from faceblur.av.stream import InputStream
+import faceblur.av.stream as fb_stream
 
 
 class Filter():
@@ -22,7 +22,7 @@ class Filter():
 class Graph():
     _graph: av.filter.Graph
 
-    def __init__(self, stream: InputStream, filters: list[Filter]):
+    def __init__(self, stream: fb_stream.InputStream, filters: list[Filter]):
         # Create the filter graph:
         # input buffer -> filter 1 -> filter 2 -> ... -> output buffersink
         graph = av.filter.Graph()

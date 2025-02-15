@@ -7,10 +7,11 @@ import logging
 import math
 import pymediainfo
 
-from faceblur.av.stream import InputStream, OutputStream
-from faceblur.av.filter import Filter, Graph
-from faceblur.av.frame import Frame
-from faceblur.av.packet import Packet
+import faceblur.av.stream as fb_stream
+import faceblur.av.filter as fb_filter
+import faceblur.av.frame as fb_frame
+import faceblur.av.packet as fb_packet
+
 from PIL.Image import Image
 
 THREAD_TYPES = [
@@ -51,36 +52,36 @@ def _dimensions_for_rotated(width, height, angle):
         return width, height
 
 
-def _filters_for_rotated(angle, input_stream: InputStream):
+def _filters_for_rotated(angle, input_stream: fb_stream.InputStream):
     # Handle different rotations.
     # See `if (autorotate) {` in fftools/ffplay.c
     if abs(angle - 90) < 1:
         # Rotated by 90. Simple transpose is enough
         return [
-            Filter("transpose", dir="clock"),
+            fb_filter.Filter("transpose", dir="clock"),
         ]
     elif abs(angle - 180) < 1:
         # Rotated by 180. Use horizontal and vertical flip
         return [
-            Filter("hflip"),
-            Filter("vflip"),
+            fb_filter.Filter("hflip"),
+            fb_filter.Filter("vflip"),
         ]
     elif abs(angle - 270) < 1:
         # Rotated by 270. Simple transpose is enough
         return [
-            Filter("transpose", dir="cclock"),
+            fb_filter.Filter("transpose", dir="cclock"),
         ]
     elif abs(angle) > 1:
         # Generic rotation by an odd angle
         return [
-            Filter("rotate", angle=angle * (math.pi / 180)),
+            fb_filter.Filter("rotate", angle=angle * (math.pi / 180)),
         ]
     else:
         # No rotation necessary (0 <= angle < 1)
         return None
 
 
-class InputVideoStream(InputStream):
+class InputVideoStream(fb_stream.InputStream):
     _info: pymediainfo.Track
     _graph = None
 
@@ -98,7 +99,7 @@ class InputVideoStream(InputStream):
             # Need to create rotation filters
             filters = _filters_for_rotated(angle, stream)
             if filters:
-                self._graph = Graph(self, filters)
+                self._graph = fb_filter.Graph(self, filters)
 
     @property
     def width(self):
@@ -117,19 +118,19 @@ class InputVideoStream(InputStream):
         return self._stream.frames
 
 
-class VideoFrame(Frame):
+class VideoFrame(fb_frame.Frame):
     def to_image(self) -> Image:
         return self._frame.to_image()
 
     @staticmethod
-    def from_image(image: Image, frame: Frame):
+    def from_image(image: Image, frame: fb_frame.Frame):
         new_frame = av.VideoFrame.from_image(image)
-        new_frame = Frame(new_frame)
+        new_frame = fb_frame.Frame(new_frame)
         new_frame.copy_metadata(frame)
         return new_frame
 
 
-class VideoPacket(Packet):
+class VideoPacket(fb_packet.Packet):
     _stream: InputVideoStream
 
     def decode(self):
@@ -145,7 +146,7 @@ CODECS_NEED_SINGLE_THREAD = [
 ]
 
 
-class OutputVideoStream(OutputStream):
+class OutputVideoStream(fb_stream.OutputStream):
     def __init__(self,
                  output_container: av.container.OutputContainer,
                  input_stream: InputVideoStream = None,

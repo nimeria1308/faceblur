@@ -6,11 +6,12 @@ import av.format
 import av.stream
 import logging
 import pymediainfo
+import typing
 
-from faceblur.av.packet import Packet
-from faceblur.av.stream import InputStream, OutputStream, CopyOutputStream
-from faceblur.av.video import VideoPacket, VideoFrame, InputVideoStream, OutputVideoStream
-from typing import Iterator
+import faceblur.av.packet as fb_packet
+import faceblur.av.stream as fb_stream
+import faceblur.av.video as fb_video
+
 
 FORMATS = {
     "mjpeg": ["mjpg", "mjpeg"],                 # raw MJPEG video, Loki SDL MJPEG
@@ -58,7 +59,7 @@ class Container():
 
 class InputContainer(Container):
     _container: av.container.InputContainer
-    _video: InputVideoStream
+    _video: fb_video.InputVideoStream
 
     def __init__(self, filename: str, thread_type: str = None, thread_count: int = None):
         super().__init__(av.open(filename, metadata_errors="ignore"))
@@ -79,7 +80,8 @@ class InputContainer(Container):
                 stream.thread_count = thread_count
 
         # Create dummy input streams for all non-video streams
-        self._streams = {stream: InputStream(stream) for stream in self._container.streams if stream.type != "video"}
+        self._streams = {stream: fb_stream.InputStream(stream)
+                         for stream in self._container.streams if stream.type != "video"}
 
         # video stream infos (tracks in MediaInfo terms)
         tracks = self._info.video_tracks + self._info.image_tracks
@@ -87,7 +89,7 @@ class InputContainer(Container):
         # If there is only one track and ID, the ID doesn't matter
         if (len(tracks) == 1) and (len(self._container.streams.video) == 1):
             stream = self._container.streams.video[0]
-            self._streams[stream] = InputVideoStream(stream, vars(tracks[0]))
+            self._streams[stream] = fb_video.InputVideoStream(stream, vars(tracks[0]))
         else:
             # Multiple tracks require matching the track IDs
             # Reshape the tracks into a {id: track}
@@ -98,7 +100,7 @@ class InputContainer(Container):
             show_ids = av.format.Flags.show_ids in av.format.Flags(self._container.format.flags)
             self._streams.update({
                 stream:
-                InputVideoStream(
+                fb_video.InputVideoStream(
                     stream, vars(tracks[stream.id if show_ids else stream.index + 1]))
                 for stream in self._container.streams.video})
 
@@ -112,17 +114,17 @@ class InputContainer(Container):
     def streams(self):
         return tuple(self._streams.values())
 
-    def demux(self) -> Iterator[Packet | VideoPacket]:
+    def demux(self) -> typing.Iterator[fb_packet.Packet | fb_video.VideoPacket]:
         for packet in self._container.demux():
             if packet.stream.type == "video":
-                yield VideoPacket(packet, self._streams[packet.stream])
+                yield fb_video.VideoPacket(packet, self._streams[packet.stream])
             else:
-                yield Packet(packet, self._streams[packet.stream])
+                yield fb_packet.Packet(packet, self._streams[packet.stream])
 
 
 class OutputContainer(Container):
     _container: av.container.OutputContainer
-    _streams: dict[InputStream, OutputStream]
+    _streams: dict[fb_stream.InputStream, fb_stream.OutputStream]
 
     def __init__(self, filename: str, template: InputContainer = None, encoder=None):
         super().__init__(av.open(filename, "w"))
@@ -134,9 +136,9 @@ class OutputContainer(Container):
             for stream in template._streams.values():
                 self.add_stream_from_template(stream, encoder)
 
-    def add_stream_from_template(self, template: InputStream, encoder=None):
+    def add_stream_from_template(self, template: fb_stream.InputStream, encoder=None):
         STREAM_TYPES = {
-            "video": OutputVideoStream,
+            "video": fb_video.OutputVideoStream,
             # currently subtitles streams are not remuxed, as this needs to be tested
             # currently data streams are not remuxed, as no data encoders are present,
             # and creating a data stream without a codec only appears to work for .ts
@@ -144,7 +146,7 @@ class OutputContainer(Container):
 
         # Mux audio only if supported by container
         if self._container.default_audio_codec != "none":
-            STREAM_TYPES["audio"] = CopyOutputStream
+            STREAM_TYPES["audio"] = fb_stream.CopyOutputStream
 
         if template.type not in STREAM_TYPES:
             # Don't handle unsupported stream types
@@ -164,6 +166,6 @@ class OutputContainer(Container):
     def streams(self):
         return tuple(self._streams.values())
 
-    def mux(self, packet_or_frame: Packet | VideoFrame):
+    def mux(self, packet_or_frame: fb_packet.Packet | fb_video.VideoFrame):
         if packet_or_frame.stream in self._streams:
             self._streams[packet_or_frame.stream].process(packet_or_frame)

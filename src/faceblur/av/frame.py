@@ -2,11 +2,11 @@
 
 import av.frame
 
-from faceblur.av.stream import Stream
+import faceblur.av.stream as fb_stream
 
 
 class Frame:
-    def __init__(self, frame: av.frame.Frame, stream: Stream = None):
+    def __init__(self, frame: av.frame.Frame, stream: fb_stream.Stream = None):
         self._frame = frame
         self._stream = stream
 

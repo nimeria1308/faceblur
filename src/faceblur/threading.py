@@ -2,10 +2,10 @@
 
 import threading
 
-from faceblur.exception import FaceblurException
+import faceblur.exception as fb_exception
 
 
-class TerminatedException(FaceblurException):
+class TerminatedException(fb_exception.FaceblurException):
     pass
 
 

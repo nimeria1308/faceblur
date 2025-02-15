@@ -2,11 +2,11 @@
 
 import av
 
-from faceblur.av.stream import InputStream
+import faceblur.av.stream as fb_stream
 
 
 class Packet():
-    def __init__(self, packet: av.Packet, stream: InputStream):
+    def __init__(self, packet: av.Packet, stream: fb_stream.InputStream):
         self._packet = packet
         self._stream = stream
 

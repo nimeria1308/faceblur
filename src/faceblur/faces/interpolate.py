@@ -3,7 +3,7 @@
 import copy
 import numpy as np
 
-from faceblur.box import Box
+import faceblur.box as fb_box
 
 
 TRACKING_MAX_FRAME_DISTANCE = 30
@@ -14,7 +14,7 @@ def _interpolate(a, b, t):
 
 
 def _interpolate_boxes(box1, box2, t):
-    return Box(
+    return fb_box.Box(
         _interpolate(box1.top, box2.top, t),
         _interpolate(box1.right, box2.right, t),
         _interpolate(box1.bottom, box2.bottom, t),
