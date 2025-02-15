@@ -4,31 +4,16 @@ import pytest
 
 from data import FACES_IMAGE_FILES
 from data import FACES_VIDEO_FILES
+from faces import MODELS
 from faceblur.av.container import InputContainer
 from faceblur.av.video import DEFAULT_THREAD_TYPE
 from faceblur.faces.identify import identify_faces_from_image
 from faceblur.faces.identify import identify_faces_from_video
-from faceblur.faces.model import DEFAULT as DEFAULT_MODEL
-from faceblur.faces.model import Model
 from faceblur.image import image_open
-
-
-CONFIGS = {
-    Model.MEDIA_PIPE_FULL_RANGE: [
-        {},  # default (50)
-        {"confidence": 25},
-        {"confidence": 75},
-    ],
-
-    Model.DLIB_HOG: [
-        {},  # default (1)
-        {"upscale": 2},
-    ]
-}
 
 # Flatten
 CONFIGS = [
-    (model, options) for model in CONFIGS for options in CONFIGS[model]
+    (model, options) for model in MODELS for options in MODELS[model]
 ]
 
 
