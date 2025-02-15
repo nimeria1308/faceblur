@@ -14,6 +14,7 @@ from subprocess import check_call
 
 TEST_DATA_FOLDER = "testdata"
 
+# FFMPEG Fate suite repo and files
 FFMPEG_FATE_SUITE_URL = "rsync://fate-suite.ffmpeg.org/fate-suite/"
 
 FFMPEG_FATE_SUITE_FOLDER = os.path.join(TEST_DATA_FOLDER, "fate")
@@ -282,6 +283,7 @@ def _git_prepare(repo, folder, branch):
     check_call(["git", "clone", repo, folder, "-b", branch])
 
 
+# Pillow repo and files
 PILLOW_REPO = "https://github.com/python-pillow/Pillow.git"
 PILLOW_REPO_BRANCH = "main"
 PILLOW_REPO_FOLDER = os.path.join(TEST_DATA_FOLDER, "pillow")
@@ -396,10 +398,17 @@ PILLOW_SKIPPED = [
     "i_trns.png",
 ]
 
+# Pillow HEIF repo and files
 PILLOW_HEIF_REPO = "https://github.com/bigcat88/pillow_heif.git"
 PILLOW_HEIF_REPO_BRANCH = "master"
 PILLOW_HEIF_REPO_FOLDER = os.path.join(TEST_DATA_FOLDER, "pillow-heif")
 PILLOW_HEIF_TEST_FOLDER = os.path.join(PILLOW_HEIF_REPO_FOLDER, "tests", "images", "heif")
+
+# Intel IoT devkit sample videos for face detection
+INTEL_SAMPLE_VIDEOS_REPO = "https://github.com/intel-iot-devkit/sample-videos"
+INTEL_SAMPLE_VIDEOS_REPO_BRANCH = "master"
+INTEL_SAMPLE_VIDEOS_REPO_FOLDER = os.path.join(TEST_DATA_FOLDER, "faces", "intel-videos")
+INTEL_SAMPLE_VIDEOS_REPO_TEST_FOLDER = INTEL_SAMPLE_VIDEOS_REPO_FOLDER
 
 
 def _prepare_files():
@@ -407,6 +416,7 @@ def _prepare_files():
     _prepare_ffmpeg_fate_suite()
     _git_prepare(PILLOW_REPO, PILLOW_REPO_FOLDER, PILLOW_REPO_BRANCH)
     _git_prepare(PILLOW_HEIF_REPO, PILLOW_HEIF_REPO_FOLDER, PILLOW_HEIF_REPO_BRANCH)
+    _git_prepare(INTEL_SAMPLE_VIDEOS_REPO, INTEL_SAMPLE_VIDEOS_REPO_FOLDER, INTEL_SAMPLE_VIDEOS_REPO_BRANCH)
 
 
 _prepare_files()
@@ -416,6 +426,8 @@ FFMPEG_FATE_FILES = walk_files(FFMPEG_FATE_SUITE_FOLDER, FFMPEG_FATE_SKIPPED)
 PILLOW_FILES = walk_files(PILLOW_TEST_FOLDER, PILLOW_SKIPPED)
 
 PILLOW_HEIF_FILES = walk_files(PILLOW_HEIF_TEST_FOLDER)
+
+INTEL_VIDEO_FILES = walk_files(INTEL_SAMPLE_VIDEOS_REPO_TEST_FOLDER)
 
 # Select only relevant files
 IMAGE_FILES = FFMPEG_FATE_FILES + PILLOW_FILES + PILLOW_HEIF_FILES
