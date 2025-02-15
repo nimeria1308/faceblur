@@ -12,6 +12,25 @@ from faceblur.faces.deidentify import MODES as BLUR_MODES
 from faceblur.faces.deidentify import STRENGTH as DEFAULT_STRENGTH
 from faceblur.faces.dlib import MODELS as DLIB_MODELS
 from faceblur.faces.dlib import UPSCALE as DEFAULT_UPSCALE
+from faceblur.help import APP as APP_HELP
+from faceblur.help import INPUTS as INPUTS_HELP
+from faceblur.help import OUTPUT as OUTPUT_HELP
+from faceblur.help import MODEL as MODEL_HELP
+from faceblur.help import MODEL_MEDIAPIPE_CONFIDENCE as CONFIDENCE_HELP
+from faceblur.help import MODEL_DLIB_UPSCALING as UPSCALING_HELP
+from faceblur.help import TRACKING_MINIMUM_IOU as IOU_HELP
+from faceblur.help import TRACKING_MAX_FACE_ENCODING_DISTANCE as ENCODING_HELP
+from faceblur.help import TRACKING_DURATION as TRACKING_DURATION_HELP
+from faceblur.help import TRACKING_MIN_FACE_DURATION as MIN_FACE_DURATION_HELP
+from faceblur.help import MODE as MODE_HELP
+from faceblur.help import BLUR_STRENGTH as STRENGTH_HELP
+from faceblur.help import IMAGE_FORMAT as IMAGE_FORMAT_HELP
+from faceblur.help import VIDEO_FORMAT as VIDEO_FORMAT_HELP
+from faceblur.help import VIDEO_ENCODER as VIDEO_ENCODER_HELP
+from faceblur.help import THREAD_TYPE as THREAD_TYPE_HELP
+from faceblur.help import THREADS as THREADS_HELP
+from faceblur.help import VERBOSE as VERBOSE_HELP
+from faceblur.image import FORMATS as IMAGE_FORMATS
 from faceblur.faces.mediapipe import MODELS as MP_MODELS
 from faceblur.faces.mediapipe import CONFIDENCE as DEFAULT_CONFIDENCE
 from faceblur.faces.mode import Mode, DEFAULT as DEFAULT_MODE
@@ -173,6 +192,25 @@ class MainWindow(wx.Frame):
         self._file_list.Bind(wx.EVT_KEY_DOWN, self._list_on_key_down)
         main_sizer.Add(self._file_list, 1, wx.EXPAND | wx.ALL, 5)
 
+        def add_element(element, panel, sizer, label=None, tooltip=None):
+            if tooltip:
+                element.SetToolTip(wx.ToolTip(tooltip.strip()))
+
+            if label:
+                if isinstance(label, str):
+                    label = wx.StaticText(panel, label=label)
+
+                if tooltip:
+                    # Need a new instace of tooltip for the label
+                    # otherwise wxPython does a double-free on close
+                    label.SetToolTip(wx.ToolTip(tooltip.strip()))
+
+                # Add the label to the UI
+                sizer.Add(label, 0, wx.LEFT | wx.TOP, 5)
+
+            # Add the element to the UI
+            sizer.Add(element, 0, wx.EXPAND | wx.ALL, 5)
+
         # Right panel
         right_panel = wx.Panel(panel)
         right_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -192,19 +230,17 @@ class MainWindow(wx.Frame):
             model_options_panel, value=DEFAULT_MODEL, choices=list(Model),
             style=wx.CB_READONLY | wx.CB_DROPDOWN)
         self._model.Bind(wx.EVT_COMBOBOX, self._update_model_options)
-        model_options_sizer.Add(wx.StaticText(model_options_panel, label="Detection model"), 0, wx.LEFT | wx.TOP, 5)
-        model_options_sizer.Add(self._model, 0, wx.EXPAND | wx.ALL, 5)
+        add_element(self._model, model_options_panel, model_options_sizer, "Detection model", MODEL_HELP)
 
         self._mp_confidence_label = wx.StaticText(model_options_panel, label="Detection confidence (%)")
-        self._mp_confidence = wx.SpinCtrl(
-            model_options_panel, value=str(DEFAULT_CONFIDENCE))
-        model_options_sizer.Add(self._mp_confidence_label, 0, wx.LEFT | wx.TOP, 5)
-        model_options_sizer.Add(self._mp_confidence, 0, wx.EXPAND | wx.ALL, 5)
+        self._mp_confidence = wx.SpinCtrl(model_options_panel, value=str(DEFAULT_CONFIDENCE))
+        add_element(self._mp_confidence, model_options_panel, model_options_sizer,
+                    self._mp_confidence_label, CONFIDENCE_HELP)
 
         self._dlib_upscale_label = wx.StaticText(model_options_panel, label="Detection upscale (x)")
         self._dlib_upscale = wx.SpinCtrl(model_options_panel, value=str(DEFAULT_UPSCALE), min=1, max=8)
-        model_options_sizer.Add(self._dlib_upscale_label, 0, wx.LEFT | wx.TOP, 5)
-        model_options_sizer.Add(self._dlib_upscale, 0, wx.EXPAND | wx.ALL, 5)
+        add_element(self._dlib_upscale, model_options_panel, model_options_sizer,
+                    self._dlib_upscale_label, UPSCALING_HELP)
 
         # Panel containg tracking options
         tracking_options_panel = wx.StaticBox(right_panel, label="Face tracking")
@@ -214,32 +250,31 @@ class MainWindow(wx.Frame):
         self._tracking = wx.CheckBox(tracking_options_panel, label="Enabled")
         self._tracking.SetValue(True)
         self._tracking.Bind(wx.EVT_CHECKBOX, self._on_tracking)
+        self._tracking.SetToolTip(wx.ToolTip("Enable face tracking used to do extra processing on faces for videos"))
         tracking_options_sizer.Add(self._tracking, 0, wx.EXPAND | wx.ALL, 5)
 
         self._iou_min_overlap_label = wx.StaticText(tracking_options_panel, label="Min overlap for IoU (%)")
-        self._iou_min_overlap = wx.SpinCtrl(
-            tracking_options_panel, value=str(IOU_MIN_OVERLAP))
-        tracking_options_sizer.Add(self._iou_min_overlap_label, 0, wx.LEFT | wx.TOP, 5)
-        tracking_options_sizer.Add(self._iou_min_overlap, 0, wx.EXPAND | wx.ALL, 5)
+        self._iou_min_overlap = wx.SpinCtrl(tracking_options_panel, value=str(IOU_MIN_OVERLAP))
+        add_element(self._iou_min_overlap, tracking_options_panel, tracking_options_sizer,
+                    self._iou_min_overlap_label, IOU_HELP)
 
         self._encoding_max_distance_label = wx.StaticText(tracking_options_panel, label="Max encoding distance (%)")
-        self._encoding_max_distance = wx.SpinCtrlDouble(
-            tracking_options_panel, value=str(ENCODING_MAX_DISTANCE))
-        tracking_options_sizer.Add(self._encoding_max_distance_label, 0, wx.LEFT | wx.TOP, 5)
-        tracking_options_sizer.Add(self._encoding_max_distance, 0, wx.EXPAND | wx.ALL, 5)
+        self._encoding_max_distance = wx.SpinCtrlDouble(tracking_options_panel, value=str(ENCODING_MAX_DISTANCE))
+        add_element(self._encoding_max_distance, tracking_options_panel, tracking_options_sizer,
+                    self._encoding_max_distance_label, ENCODING_HELP)
 
         self._min_track_face_duration_label = wx.StaticText(tracking_options_panel, label="Min face duration (s)")
         self._min_track_face_duration = wx.SpinCtrlDouble(
             tracking_options_panel, value=str(MIN_FACE_DURATION),
             min=0, max=10, inc=0.1)
-        tracking_options_sizer.Add(self._min_track_face_duration_label, 0, wx.LEFT | wx.TOP, 5)
-        tracking_options_sizer.Add(self._min_track_face_duration, 0, wx.EXPAND | wx.ALL, 5)
+        add_element(self._min_track_face_duration, tracking_options_panel, tracking_options_sizer,
+                    self._min_track_face_duration_label, MIN_FACE_DURATION_HELP)
 
         self._tracking_duration_label = wx.StaticText(tracking_options_panel, label="Tracking duration (s)")
         self._tracking_duration = wx.SpinCtrlDouble(
             tracking_options_panel, value=str(TRACKING_DURATION), min=0, max=10, inc=0.1)
-        tracking_options_sizer.Add(self._tracking_duration_label, 0, wx.LEFT | wx.TOP, 5)
-        tracking_options_sizer.Add(self._tracking_duration, 0, wx.EXPAND | wx.ALL, 5)
+        add_element(self._tracking_duration, tracking_options_panel, tracking_options_sizer,
+                    self._tracking_duration_label, TRACKING_DURATION_HELP)
 
         self._tracking_controls = [
             self._iou_min_overlap_label,
@@ -284,13 +319,12 @@ class MainWindow(wx.Frame):
             mode_options_panel, value=DEFAULT_MODE, choices=list(Mode),
             style=wx.CB_READONLY | wx.CB_DROPDOWN)
         self._mode.Bind(wx.EVT_COMBOBOX, self._update_mode_options)
-        mode_options_sizer.Add(wx.StaticText(mode_options_panel, label="Mode"), 0, wx.LEFT | wx.TOP, 5)
-        mode_options_sizer.Add(self._mode, 0, wx.EXPAND | wx.ALL, 5)
+        add_element(self._mode, mode_options_panel, mode_options_sizer, "Mode", MODE_HELP)
 
         self._strength_label = wx.StaticText(mode_options_panel, label="Blur strength (%)")
         self._strength = wx.SpinCtrl(mode_options_panel, value=str(DEFAULT_STRENGTH), min=1, max=1000)
-        mode_options_sizer.Add(self._strength_label, 0, wx.LEFT | wx.TOP, 5)
-        mode_options_sizer.Add(self._strength, 0, wx.EXPAND | wx.ALL, 5)
+        add_element(self._strength, mode_options_panel, mode_options_sizer,
+                    self._strength_label, STRENGTH_HELP)
 
         self._mode_options_controls = {
             Mode.DEBUG: [],
