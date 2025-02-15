@@ -178,57 +178,72 @@ class MainWindow(wx.Frame):
         right_panel = wx.Panel(panel)
         right_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        # "Options" Panel with number inputs
+        # Panel containing all options
         options_panel = wx.StaticBox(right_panel, label="Options")
         options_sizer = wx.StaticBoxSizer(options_panel, wx.VERTICAL)
 
         # Models
+
+        # Panel containg model options
+        model_options_panel = wx.StaticBox(right_panel, label="Model")
+        model_options_sizer = wx.StaticBoxSizer(model_options_panel, wx.VERTICAL)
+        options_sizer.Add(model_options_sizer, flag=wx.ALL | wx.EXPAND, border=10)
+
         self._model = wx.ComboBox(
-            right_panel, value=DEFAULT_MODEL, choices=list(Model),
+            model_options_panel, value=DEFAULT_MODEL, choices=list(Model),
             style=wx.CB_READONLY | wx.CB_DROPDOWN)
         self._model.Bind(wx.EVT_COMBOBOX, self._update_model_options)
-        options_sizer.Add(wx.StaticText(right_panel, label="Detection model"), 0, wx.LEFT | wx.TOP, 5)
-        options_sizer.Add(self._model, 0, wx.EXPAND | wx.ALL, 5)
+        model_options_sizer.Add(wx.StaticText(model_options_panel, label="Detection model"), 0, wx.LEFT | wx.TOP, 5)
+        model_options_sizer.Add(self._model, 0, wx.EXPAND | wx.ALL, 5)
 
-        self._mp_confidence_label = wx.StaticText(right_panel, label="Detection confidence")
-        self._mp_confidence = wx.SpinCtrlDouble(right_panel, value=str(DEFAULT_CONFIDENCE), min=0, max=1, inc=0.01)
-        options_sizer.Add(self._mp_confidence_label, 0, wx.LEFT | wx.TOP, 5)
-        options_sizer.Add(self._mp_confidence, 0, wx.EXPAND | wx.ALL, 5)
+        self._mp_confidence_label = wx.StaticText(model_options_panel, label="Detection confidence")
+        self._mp_confidence = wx.SpinCtrlDouble(
+            model_options_panel, value=str(DEFAULT_CONFIDENCE),
+            min=0, max=1, inc=0.01)
+        model_options_sizer.Add(self._mp_confidence_label, 0, wx.LEFT | wx.TOP, 5)
+        model_options_sizer.Add(self._mp_confidence, 0, wx.EXPAND | wx.ALL, 5)
 
-        self._dlib_upscale_label = wx.StaticText(right_panel, label="Detection upscale")
-        self._dlib_upscale = wx.SpinCtrl(right_panel, value="1", min=1, max=8,)
-        options_sizer.Add(self._dlib_upscale_label, 0, wx.LEFT | wx.TOP, 5)
-        options_sizer.Add(self._dlib_upscale, 0, wx.EXPAND | wx.ALL, 5)
+        self._dlib_upscale_label = wx.StaticText(model_options_panel, label="Detection upscale")
+        self._dlib_upscale = wx.SpinCtrl(model_options_panel, value="1", min=1, max=8,)
+        model_options_sizer.Add(self._dlib_upscale_label, 0, wx.LEFT | wx.TOP, 5)
+        model_options_sizer.Add(self._dlib_upscale, 0, wx.EXPAND | wx.ALL, 5)
 
-        self._tracking = wx.CheckBox(right_panel, label="Face tracking")
+        # Panel containg tracking options
+        tracking_options_panel = wx.StaticBox(right_panel, label="Face tracking")
+        tracking_options_sizer = wx.StaticBoxSizer(tracking_options_panel, wx.VERTICAL)
+        options_sizer.Add(tracking_options_sizer, flag=wx.ALL | wx.EXPAND, border=10)
+
+        self._tracking = wx.CheckBox(tracking_options_panel, label="Enabled")
         self._tracking.SetValue(True)
         self._tracking.Bind(wx.EVT_CHECKBOX, self._on_tracking)
-        options_sizer.Add(self._tracking, 0, wx.EXPAND | wx.ALL, 5)
+        tracking_options_sizer.Add(self._tracking, 0, wx.EXPAND | wx.ALL, 5)
 
-        self._iou_min_score_label = wx.StaticText(right_panel, label="Min IoU tracking score")
-        self._iou_min_score = wx.SpinCtrlDouble(right_panel, value=str(IOU_MIN_SCORE), min=0, max=1, inc=0.01)
-        options_sizer.Add(self._iou_min_score_label, 0, wx.LEFT | wx.TOP, 5)
-        options_sizer.Add(self._iou_min_score, 0, wx.EXPAND | wx.ALL, 5)
-
-        self._encoding_max_distance_label = wx.StaticText(right_panel, label="Max encoding distance")
-        self._encoding_max_distance = wx.SpinCtrlDouble(
-            right_panel, value=str(ENCODING_MAX_DISTANCE),
+        self._iou_min_score_label = wx.StaticText(tracking_options_panel, label="Min IoU tracking score")
+        self._iou_min_score = wx.SpinCtrlDouble(
+            tracking_options_panel, value=str(IOU_MIN_SCORE),
             min=0, max=1, inc=0.01)
-        options_sizer.Add(self._encoding_max_distance_label, 0, wx.LEFT | wx.TOP, 5)
-        options_sizer.Add(self._encoding_max_distance, 0, wx.EXPAND | wx.ALL, 5)
+        tracking_options_sizer.Add(self._iou_min_score_label, 0, wx.LEFT | wx.TOP, 5)
+        tracking_options_sizer.Add(self._iou_min_score, 0, wx.EXPAND | wx.ALL, 5)
 
-        self._min_track_face_duration_label = wx.StaticText(right_panel, label="Min face duration")
+        self._encoding_max_distance_label = wx.StaticText(tracking_options_panel, label="Max encoding distance")
+        self._encoding_max_distance = wx.SpinCtrlDouble(
+            tracking_options_panel, value=str(ENCODING_MAX_DISTANCE),
+            min=0, max=1, inc=0.01)
+        tracking_options_sizer.Add(self._encoding_max_distance_label, 0, wx.LEFT | wx.TOP, 5)
+        tracking_options_sizer.Add(self._encoding_max_distance, 0, wx.EXPAND | wx.ALL, 5)
+
+        self._min_track_face_duration_label = wx.StaticText(tracking_options_panel, label="Min face duration")
         self._min_track_face_duration = wx.SpinCtrlDouble(
-            right_panel, value=str(MIN_FACE_DURATION),
+            tracking_options_panel, value=str(MIN_FACE_DURATION),
             min=0, max=10, inc=0.1)
-        options_sizer.Add(self._min_track_face_duration_label, 0, wx.LEFT | wx.TOP, 5)
-        options_sizer.Add(self._min_track_face_duration, 0, wx.EXPAND | wx.ALL, 5)
+        tracking_options_sizer.Add(self._min_track_face_duration_label, 0, wx.LEFT | wx.TOP, 5)
+        tracking_options_sizer.Add(self._min_track_face_duration, 0, wx.EXPAND | wx.ALL, 5)
 
-        self._tracking_duration_label = wx.StaticText(right_panel, label="Tracking duration (s)")
+        self._tracking_duration_label = wx.StaticText(tracking_options_panel, label="Tracking duration (s)")
         self._tracking_duration = wx.SpinCtrlDouble(
-            right_panel, value=str(TRACKING_DURATION), min=0, max=10, inc=0.1)
-        options_sizer.Add(self._tracking_duration_label, 0, wx.LEFT | wx.TOP, 5)
-        options_sizer.Add(self._tracking_duration, 0, wx.EXPAND | wx.ALL, 5)
+            tracking_options_panel, value=str(TRACKING_DURATION), min=0, max=10, inc=0.1)
+        tracking_options_sizer.Add(self._tracking_duration_label, 0, wx.LEFT | wx.TOP, 5)
+        tracking_options_sizer.Add(self._tracking_duration, 0, wx.EXPAND | wx.ALL, 5)
 
         self._tracking_controls = [
             self._iou_min_score_label,
@@ -263,17 +278,23 @@ class MainWindow(wx.Frame):
         }
 
         # Modes
+
+        # Panel containg mode options
+        mode_options_panel = wx.StaticBox(right_panel, label="Mode")
+        mode_options_sizer = wx.StaticBoxSizer(mode_options_panel, wx.VERTICAL)
+        options_sizer.Add(mode_options_sizer, flag=wx.ALL | wx.EXPAND, border=10)
+
         self._mode = wx.ComboBox(
-            right_panel, value=DEFAULT_MODE, choices=list(Mode),
+            mode_options_panel, value=DEFAULT_MODE, choices=list(Mode),
             style=wx.CB_READONLY | wx.CB_DROPDOWN)
         self._mode.Bind(wx.EVT_COMBOBOX, self._update_mode_options)
-        options_sizer.Add(wx.StaticText(right_panel, label="Deidentification mode"), 0, wx.LEFT | wx.TOP, 5)
-        options_sizer.Add(self._mode, 0, wx.EXPAND | wx.ALL, 5)
+        mode_options_sizer.Add(wx.StaticText(mode_options_panel, label="Mode"), 0, wx.LEFT | wx.TOP, 5)
+        mode_options_sizer.Add(self._mode, 0, wx.EXPAND | wx.ALL, 5)
 
-        self._strength_label = wx.StaticText(right_panel, label="Blur strength")
-        self._strength = wx.SpinCtrlDouble(right_panel, value=str(DEFAULT_STRENGTH), min=0.1, max=10, inc=0.1)
-        options_sizer.Add(self._strength_label, 0, wx.LEFT | wx.TOP, 5)
-        options_sizer.Add(self._strength, 0, wx.EXPAND | wx.ALL, 5)
+        self._strength_label = wx.StaticText(mode_options_panel, label="Blur strength")
+        self._strength = wx.SpinCtrlDouble(mode_options_panel, value=str(DEFAULT_STRENGTH), min=0.1, max=10, inc=0.1)
+        mode_options_sizer.Add(self._strength_label, 0, wx.LEFT | wx.TOP, 5)
+        mode_options_sizer.Add(self._strength, 0, wx.EXPAND | wx.ALL, 5)
 
         self._mode_options_controls = {
             Mode.DEBUG: [],
@@ -287,37 +308,32 @@ class MainWindow(wx.Frame):
             ],
         }
 
-        self._reset_button = wx.Button(right_panel, label="Reset options")
-        self._reset_button.Bind(wx.EVT_BUTTON, self._on_reset)
-        options_sizer.Add(self._reset_button, 0, wx.EXPAND | wx.ALL, 5)
+        # Reset button
+        reset_button = wx.Button(options_panel, label="Reset options")
+        reset_button.Bind(wx.EVT_BUTTON, self._on_reset)
+        options_sizer.Add(reset_button, 0, wx.EXPAND | wx.ALL, 5)
 
-        self._output = wx.TextCtrl(right_panel)
-        options_sizer.Add(wx.StaticText(right_panel, label="Output"), 0, wx.LEFT | wx.TOP, 5)
-        options_sizer.Add(self._output, 0, wx.EXPAND | wx.ALL, 5)
-
-        self._browse_button = wx.Button(right_panel, label="Browse")
-        self._browse_button.Bind(wx.EVT_BUTTON, self._on_browse)
-        options_sizer.Add(self._browse_button, 0, wx.EXPAND | wx.ALL, 5)
-
+        # End of options panel
         right_sizer.Add(options_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
-        # Button(s) on the right
-        button_panel = wx.Panel(right_panel)
-        button_sizer = wx.BoxSizer(wx.VERTICAL)
+        # Output field
+        output_panel = wx.StaticBox(right_panel, label="Output")
+        output_sizer = wx.StaticBoxSizer(output_panel, wx.HORIZONTAL)
 
-        self._start_button = wx.Button(button_panel, label="Start")
-        self._start_button.Bind(wx.EVT_BUTTON, self._on_start)
-        self._start_button.SetDefault()
+        self._output = wx.TextCtrl(output_panel)
+        output_sizer.Add(self._output, flag=wx.RIGHT, border=10, proportion=5)
 
-        self._buttons = [
-            self._start_button,
-        ]
+        browse_button = wx.Button(output_panel, label="Browse")
+        browse_button.Bind(wx.EVT_BUTTON, self._on_browse)
+        output_sizer.Add(browse_button, proportion=1)
 
-        for button in self._buttons:
-            button_sizer.Add(button, 0, wx.EXPAND | wx.ALL, 5)
+        right_sizer.Add(output_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
-        button_panel.SetSizer(button_sizer)
-        right_sizer.Add(button_panel, 0, wx.EXPAND | wx.ALL, 5)
+        # Start button
+        start_button = wx.Button(right_panel, label="Start")
+        start_button.Bind(wx.EVT_BUTTON, self._on_start)
+        start_button.SetDefault()
+        right_sizer.Add(start_button, 0, wx.EXPAND | wx.ALL, 5)
 
         right_panel.SetSizer(right_sizer)
         main_sizer.Add(right_panel, 0, wx.EXPAND | wx.ALL, 5)
