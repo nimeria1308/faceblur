@@ -3,7 +3,6 @@
 import face_recognition
 
 IOU_MIN_SCORE = 0.05
-MIN_TRACK_RELATIVE_SIZE = 0.25
 ENCODING_MAX_DISTANCE = 0.6
 
 
@@ -84,12 +83,7 @@ def track_faces_encodings(frames, encodings_for_frames, encoding_max_distance=EN
     return tracks, frames_with_tracks
 
 
-def filter_frames_with_tracks(
-        tracks, frames_with_tracks,
-        min_track_relative_size=MIN_TRACK_RELATIVE_SIZE):
-
-    min_track_size = int(min_track_relative_size * len(frames_with_tracks))
-
+def filter_frames_with_tracks(tracks, frames_with_tracks, min_track_size):
     return [
         [
             (face, track_index)

@@ -11,8 +11,8 @@ from faceblur.app import faceblur
 from faceblur.faces.deidentify import MODES as BLUR_MODES
 from faceblur.faces.mode import Mode, DEFAULT as DEFAULT_MODE
 from faceblur.faces.model import Model, DEFAULT as DEFAULT_MODEL
-from faceblur.faces.process import TRACKING_DURATION
-from faceblur.faces.track import IOU_MIN_SCORE, ENCODING_MAX_DISTANCE, MIN_TRACK_RELATIVE_SIZE
+from faceblur.faces.process import TRACKING_DURATION, MIN_FACE_DURATION
+from faceblur.faces.track import IOU_MIN_SCORE, ENCODING_MAX_DISTANCE
 from faceblur.progress import Progress
 from faceblur.threading import TerminatingCookie
 
@@ -215,12 +215,12 @@ class MainWindow(wx.Frame):
         options_sizer.Add(self._encoding_max_distance_label, 0, wx.LEFT | wx.TOP, 5)
         options_sizer.Add(self._encoding_max_distance, 0, wx.EXPAND | wx.ALL, 5)
 
-        self._min_track_relative_size_label = wx.StaticText(right_panel, label="Min track relative size")
-        self._min_track_relative_size = wx.SpinCtrlDouble(
-            right_panel, value=str(MIN_TRACK_RELATIVE_SIZE),
-            min=0, max=1, inc=0.01)
-        options_sizer.Add(self._min_track_relative_size_label, 0, wx.LEFT | wx.TOP, 5)
-        options_sizer.Add(self._min_track_relative_size, 0, wx.EXPAND | wx.ALL, 5)
+        self._min_track_face_duration_label = wx.StaticText(right_panel, label="Min face duration")
+        self._min_track_face_duration = wx.SpinCtrlDouble(
+            right_panel, value=str(MIN_FACE_DURATION),
+            min=0, max=10, inc=0.1)
+        options_sizer.Add(self._min_track_face_duration_label, 0, wx.LEFT | wx.TOP, 5)
+        options_sizer.Add(self._min_track_face_duration, 0, wx.EXPAND | wx.ALL, 5)
 
         self._tracking_duration_label = wx.StaticText(right_panel, label="Tracking duration (s)")
         self._tracking_duration = wx.SpinCtrlDouble(
@@ -233,8 +233,8 @@ class MainWindow(wx.Frame):
             self._iou_min_score,
             self._encoding_max_distance_label,
             self._encoding_max_distance,
-            self._min_track_relative_size_label,
-            self._min_track_relative_size,
+            self._min_track_face_duration_label,
+            self._min_track_face_duration,
             self._tracking_duration_label,
             self._tracking_duration,
         ]
@@ -398,7 +398,7 @@ Copyright (C) 2025, Simona Dimitrova"""
         self._dlib_upscale.SetValue(1)
         self._iou_min_score.SetValue(IOU_MIN_SCORE)
         self._encoding_max_distance.SetValue(ENCODING_MAX_DISTANCE)
-        self._min_track_relative_size.SetValue(MIN_TRACK_RELATIVE_SIZE)
+        self._min_track_face_duration.SetValue(MIN_FACE_DURATION)
         self._tracking_duration.SetValue(TRACKING_DURATION)
         self._mode.SetValue(DEFAULT_MODE)
         self._strength.SetValue(DEFAULT_STRENGTH)
@@ -477,7 +477,7 @@ Copyright (C) 2025, Simona Dimitrova"""
         self._progress = ProgressDialog(self, "Working...")
 
         tracking = {
-            "min_track_relative_size": self._min_track_relative_size.GetValue(),
+            "min_face_duration": self._min_track_face_duration.GetValue(),
             "tracking_duration": self._tracking_duration.GetValue(),
         }
 
