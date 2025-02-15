@@ -43,7 +43,6 @@ MODEL_DLIB_UPSCALING = f"""
 Only used for DLIB models.
 
 Input upscaling. The value is a positive integer.
-
 Values closer to 1 find more faces, but produce more false positives.
 Higher values find less faces, but produce less false positives.
 
@@ -58,14 +57,9 @@ TRACKING_MINIMUM_IOU = f"""
 Only used for MEDIA_PIPE models.
 
 Uses a simple heuristic to bin faces into tracks: intersection over union.
-
-This is the minimum overlap in percent with previous faceboxes.
+The value represents the minimum ovelap with previous face boxes (in percent) needed to place faces in the same track.
+Identical boxes produces a value of 100 percent for IoU, and boxes that do not intersect at all produce a 0 percent.
 The more subsequent face boxes overlap, the higher the score.
-Identical boxes produces a value of 100 percent for IoU, and boxes that do not intersect
-at all produce a 0 percent.
-
-The value represents the minimum IoU needed to place faces in the same track.
-
 Higher values create more unique tracks, while lower values bin more faces into the same track.
 
 Defaults to {IOU_MIN_OVERLAP}
@@ -74,37 +68,25 @@ Defaults to {IOU_MIN_OVERLAP}
 TRACKING_MAX_FACE_ENCODING_DISTANCE = f"""
 Only used for DLIB models.
 
-Uses a more robust face tracking heuristic: distance between face encodings.
-A face encoding is generated from the found face features (e.g. nose, eyes, etc.) so that
-it can more robustly match faces in separate frames.
-
-This is the distance in percent of how similar the face is.
-
+Uses a more robust face tracking heuristic: distance between face encodings, i.e. how similar the faces must be (in percent).
+A face encoding is generated from the found face features (e.g. nose, eyes, etc.) so that it can more robustly match faces in separate frames.
 Lower values create more unique tracks, while higher values bin more faces into the same track.
 
 Defaults to {ENCODING_MAX_DISTANCE}
 """
 
 TRACKING_DURATION = f"""
-For how many seconds to track a unique face (face track). This is the amount of time it will interpolate
-faces back from the moment a face is found for a particular face track.
+For how many seconds to track a unique face (face track). This is the amount of time it will interpolate faces back from the moment a face is found for a particular face track.
 
-This is used to interpolate missing faces because of false negatives, either because the model could not find
-a face where there was one, or because the person's face was not visible (e.g. was occluded or was looking to
-the side).
-
-Higher values are able to fill big gaps for when faces have not been found, e.g. a person is looking to the side
-for several seconds.
+This is used to interpolate missing faces because of false negatives, either because the model could not find a face where there was one, or because the person's face was not visible (e.g. was occluded or was looking to the side).
+Higher values are able to fill big gaps for when faces have not been found, e.g. a person is looking to the side for several seconds.
 
 Defaults to {TRACKING_DURATION}
 """
 
 TRACKING_MIN_FACE_DURATION = f"""
-What is the minimum amount of seconds for a particular unique face (face track) needed to include the face
-in the output of detected faces.
-
-This is used to filter out false positives: faces that the model found but were not really faces, e.g.
-vegetation.
+What is the minimum amount of seconds for a particular unique face (face track) needed to include the face in the output of detected faces.
+This is used to filter out false positives: faces that the model found but were not really faces, e.g. vegetation.
 
 Defaults to {MIN_FACE_DURATION}
 """
@@ -114,17 +96,14 @@ Modes of operation:
 
 * RECT_BLUR: Uses gaussian blur directly on the face rects. Does not look very nice as it produces rectangular blurred boxes.
 * GRACEFUL_BLUR: Uses gaussian blur on the faces, but then applies gradual oval masks to create a more natural look.
-* DEBUG: Dumps found faces into a JSON file (one for each input) and then draws the found face boxes onto output.
-  Red for the original boxes, blue for the processed faces.
-
+* DEBUG: Dumps found faces into a JSON file (one for each input) and then draws the found face boxes onto output. Red for the original boxes, blue for the processed faces.
 
 Defaults to {DEFAULT_MODE}"""
 
 BLUR_STRENGTH = f"""
-Only used for blur modes.
+Only used for blurring modes.
 
-Specify the strength of the obfuscation.
-It is a multiplier, so 0..1 makes faces more recognisable, while 1+ makes them less so.
+Specify the strength of the obfuscation (in percent).
 
 Defaults to {DEFAULT_STRENGTH}
 """
@@ -150,6 +129,7 @@ THREAD_TYPE = f"PyAV decoder/encoder threading model. Defaults to {DEFAULT_THREA
 
 THREADS = f"""
 How many threads to use for face detection, video decoding/encoding.
+
 Defaults to the number of logical cores: {os.cpu_count()}
 """
 
