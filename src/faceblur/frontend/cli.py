@@ -16,9 +16,6 @@ import faceblur.help as fb_help
 import faceblur.image as fb_image
 
 
-av.logging.set_level(av.logging.ERROR)
-
-
 def main():
     parser = argparse.ArgumentParser(
         description=fb_help.APP
