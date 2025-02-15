@@ -10,6 +10,8 @@ from faceblur.av.container import FORMATS as CONTAINER_FORMATS
 from faceblur.av.video import ENCODERS, THREAD_TYPES, DEFAULT_THREAD_TYPE
 from faceblur.faces.deidentify import MODES as BLUR_MODES
 from faceblur.faces.deidentify import STRENGTH as DEFAULT_STRENGTH
+from faceblur.faces.dlib import MODELS as DLIB_MODELS
+from faceblur.faces.mediapipe import MODELS as MP_MODELS
 from faceblur.faces.mode import Mode, DEFAULT as DEFAULT_MODE
 from faceblur.faces.model import Model, DEFAULT as DEFAULT_MODEL
 from faceblur.help import APP as APP_HELP
@@ -20,6 +22,8 @@ from faceblur.help import MODEL_MEDIAPIPE_CONFIDENCE as CONFIDENCE_HELP
 from faceblur.help import MODEL_DLIB_UPSCALING as UPSCALING_HELP
 from faceblur.help import TRACKING_MINIMUM_IOU as IOU_HELP
 from faceblur.help import TRACKING_MAX_FACE_ENCODING_DISTANCE as ENCODING_HELP
+from faceblur.help import TRACKING_DURATION as TRACKING_DURATION_HELP
+from faceblur.help import MIN_FACE_DURATION as MIN_FACE_DURATION_HELP
 from faceblur.help import MODE as MODE_HELP
 from faceblur.help import BLUR_STRENGTH as STRENGTH_HELP
 from faceblur.help import IMAGE_FORMAT as IMAGE_FORMAT_HELP
@@ -60,7 +64,7 @@ def main():
                         help=UPSCALING_HELP)
 
     parser.add_argument("--disable-tracking",
-                        action="store_false",
+                        action="store_true",
                         help="Disable face tracking for videos. On by default.")
 
     parser.add_argument("--tracking-min-iou",
@@ -71,13 +75,20 @@ def main():
                         type=float,
                         help=ENCODING_HELP)
 
+    parser.add_argument("--tracking-duration",
+                        type=float,
+                        help=TRACKING_DURATION_HELP)
+
+    parser.add_argument("--tracking-min-face-duration",
+                        type=float,
+                        help=MIN_FACE_DURATION_HELP)
+
     parser.add_argument("--mode", "-M",
                         choices=list(Mode),
                         default=DEFAULT_MODE,
                         help=MODE_HELP)
 
     parser.add_argument("--strength", "-s",
-                        default=DEFAULT_STRENGTH,
                         type=float,
                         help=STRENGTH_HELP)
 
@@ -109,11 +120,63 @@ def main():
 
     # Fix the params
 
+    # Model options
+    model_options = {}
+
+    if args.model_confidence is not None:
+        if args.model in MP_MODELS:
+            model_options["confidence"] = args.model_confidence
+        else:
+            parser.error(f"model {args.model} does not support --model-confidence")
+
+    if args.model_upscaling is not None:
+        if args.model in DLIB_MODELS:
+            model_options["upscale"] = args.model_upscaling
+        else:
+            parser.error(f"model {args.model} does not support --model-upscaling")
+
+    # Face tracking
+    if args.disable_tracking:
+        tracking_args = [
+            args.tracking_min_iou,
+            args.tracking_max_encoding_distance,
+            args.tracking_duration,
+            args.tracking_min_face_duration,
+        ]
+
+        if any(t is not None for t in tracking_args):
+            parser.error(f"Providing tracking options has no effect when tracking is disabled")
+
+        tracking_options = False
+    else:
+        tracking_options = {}
+
+        if args.tracking_min_iou is not None:
+            if args.model in MP_MODELS:
+                tracking_options["score"] = args.tracking_min_iou
+            else:
+                parser.error(f"IoU tracking is not supported for model {args.model}")
+
+        if args.tracking_max_encoding_distance is not None:
+            if args.model in DLIB_MODELS:
+                tracking_options["score"] = args.tracking_max_encoding_distance
+            else:
+                parser.error(f"Face encoding tracking is not supported for model {args.model}")
+
+        if args.tracking_duration is not None:
+            tracking_options["tracking_durtaion"] = args.tracking_duration
+
+        if args.tracking_min_face_duration is not None:
+            tracking_options["min_face_duration"] = args.tracking_min_face_duration
+
     # Mode
     mode_options = {}
 
-    if args.mode in BLUR_MODES:
-        mode_options["strength"] = args.strength
+    if args.strength is not None:
+        if args.mode in BLUR_MODES:
+            mode_options["strength"] = args.strength
+        else:
+            parser.error(f"--strength is not valid for mode {args.mode}")
 
     # Image options
     image = {
@@ -135,6 +198,8 @@ def main():
         "inputs": args.inputs,
         "output": args.output,
         "model": args.model,
+        "model_options": model_options,
+        "tracking_options": tracking_options,
         "mode": args.mode,
         "mode_options": mode_options,
         "image_options": image,
