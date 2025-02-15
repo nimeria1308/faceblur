@@ -9,4 +9,4 @@ class Mode(StrEnum):
     DEBUG = "DEBUG"
 
 
-DEFAULT = Mode.RECT_BLUR
+DEFAULT = Mode.GRACEFUL_BLUR
