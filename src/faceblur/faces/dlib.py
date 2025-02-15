@@ -7,8 +7,14 @@ import numpy as np
 
 from faceblur.box import Box
 from faceblur.faces.detector import Detector
+from faceblur.faces.model import Model
 
 UPSCALE = 1
+
+MODELS = [
+    Model.DLIB_HOG,
+    Model.DLIB_CNN,
+]
 
 
 def _process_frame(detector, image, frame_number, upscale):

@@ -4,9 +4,15 @@ import numpy as np
 
 from faceblur.box import Box
 from faceblur.faces.detector import Detector
+from faceblur.faces.model import Model
 from mediapipe.python.solutions.face_detection import FaceDetection
 
 CONFIDENCE = 0.5
+
+MODELS = [
+    Model.MEDIA_PIPE_SHORT_RANGE,
+    Model.MEDIA_PIPE_FULL_RANGE,
+]
 
 
 class MediaPipeDetector(Detector):

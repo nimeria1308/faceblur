@@ -9,6 +9,8 @@ import wx
 from faceblur.app import get_supported_filenames
 from faceblur.app import faceblur
 from faceblur.faces.deidentify import MODES as BLUR_MODES
+from faceblur.faces.dlib import MODELS as DLIB_MODELS
+from faceblur.faces.mediapipe import MODELS as MP_MODELS
 from faceblur.faces.mode import Mode, DEFAULT as DEFAULT_MODE
 from faceblur.faces.model import Model, DEFAULT as DEFAULT_MODEL
 from faceblur.faces.process import TRACKING_DURATION, MIN_FACE_DURATION
@@ -482,11 +484,11 @@ Copyright (C) 2025, Simona Dimitrova"""
         }
 
         model_options = {}
-        if self._model.GetValue() in [Model.MEDIA_PIPE_SHORT_RANGE, Model.MEDIA_PIPE_FULL_RANGE]:
+        if self._model.GetValue() in MP_MODELS:
             model_options["confidence"] = self._mp_confidence.GetValue()
             tracking["score"] = self._iou_min_score.GetValue()
 
-        if self._model.GetValue() in [Model.DLIB_HOG, Model.DLIB_CNN]:
+        if self._model.GetValue() in DLIB_MODELS:
             model_options["upscale"] = self._dlib_upscale.GetValue()
             tracking["score"] = self._encoding_max_distance.GetValue()
 
