@@ -8,7 +8,8 @@ from faceblur.faces.model import DEFAULT as DEFAULT_MODEL
 from faceblur.faces.deidentify import STRENGTH as DEFAULT_STRENGTH
 from faceblur.faces.dlib import UPSCALE as DEFAULT_UPSCALE
 from faceblur.faces.mediapipe import CONFIDENCE as DEFAULT_CONFIDENCE
-from faceblur.faces.track import IOU_MIN_SCORE, ENCODING_MAX_DISTANCE, MIN_TRACK_RELATIVE_SIZE
+from faceblur.faces.process import TRACKING_DURATION, MIN_FACE_DURATION
+from faceblur.faces.track import IOU_MIN_SCORE, ENCODING_MAX_DISTANCE
 
 
 APP = "A tool to obfuscate faces from photos and videos"
@@ -78,7 +79,29 @@ Lower values create more unique tracks, while higher values bin more faces into 
 Defaults to {ENCODING_MAX_DISTANCE}
 """
 
-# autopep8:off
+TRACKING_DURATION = f"""
+For how many seconds to track a unique face (face track). This is the amount of time it will interpolate
+faces back from the moment a face is found for a particular face track.
+
+This is used to interpolate missing faces because of false negatives, either because the model could not find
+a face where there was one, or because the person's face was not visible (e.g. was occluded or was looking to
+the side).
+
+Higher values are able to fill big gaps for when faces have not been found, e.g. a person is looking to the side
+for several seconds.
+
+Defaults to {TRACKING_DURATION}
+"""
+
+TRACKING_MIN_FACE_DURATION = f"""
+What is the minimum amount of seconds for a particular unique face (face track) needed to include the face
+in the output of detected faces.
+
+This is used to filter out false positives: faces that the model found but were not really faces, e.g.
+vegetation.
+
+Defaults to {MIN_FACE_DURATION}
+"""
 
 MODE = f"""
 Modes of operation:
@@ -90,8 +113,6 @@ Modes of operation:
 
 
 Defaults to {DEFAULT_MODE}"""
-
-# autopep8:on
 
 BLUR_STRENGTH = f"""
 Only used for blur modes.
