@@ -455,3 +455,12 @@ if sys.platform == "darwin":
 # Only files with supported extensions, and only containers that actually have video streams
 VIDEO_FILES = [f for f in FFMPEG_FATE_FILES
                if is_filename_from_ext_group(f, CONTAINER_EXENTSIONS) and MediaInfo.parse(f).video_tracks]
+
+# Add files used for face processing
+FACES_IMAGE_FILES = INTEL_VIDEO_FILES + FACE_RECOGNITION_FILES
+FACES_IMAGE_FILES = [f for f in FACES_IMAGE_FILES if is_filename_from_ext_group(f, IMAGE_EXTENSIONS)]
+
+# Only files with supported extensions, and only containers that actually have video streams
+FACES_VIDEO_FILES = INTEL_VIDEO_FILES
+FACES_VIDEO_FILES = [f for f in FACES_VIDEO_FILES
+                     if is_filename_from_ext_group(f, CONTAINER_EXENTSIONS) and MediaInfo.parse(f).video_tracks]
