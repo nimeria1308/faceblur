@@ -18,8 +18,7 @@ from faceblur.faces.identify import identify_faces_from_image, identify_faces_fr
 from faceblur.faces.debug import debug_faces
 from faceblur.faces.deidentify import blur_faces
 from faceblur.faces.deidentify import MODES as BLUR_MODES
-from faceblur.faces.process import TRACKING_DURATION, process_faces_in_frames
-from faceblur.faces.track import IOU_MIN_SCORE, ENCODING_MAX_DISTANCE, MIN_TRACK_RELATIVE_SIZE
+from faceblur.faces.process import process_faces_in_frames
 from faceblur.image import EXTENSIONS as IMAGE_EXTENSIONS
 from faceblur.image import FORMATS as IMAGE_FORMATS
 from faceblur.image import image_open
@@ -174,16 +173,6 @@ def _faceblur_video(
     with InputContainer(input_filename, thread_type, threads) as input_container:
         faces = identify_faces_from_video(
             input_container, model, model_options=model_options, progress=progress_type, stop=stop)
-
-    if tracking_options == {}:
-        # Fill in defaults
-        if isinstance(tracking_options, dict):
-            # Use defaults when not filled in
-            tracking_options = {
-                "score": ENCODING_MAX_DISTANCE if all([f[1] for f in faces.values()]) else IOU_MIN_SCORE,
-                "min_track_relative_size": MIN_TRACK_RELATIVE_SIZE,
-                "tracking_duration": TRACKING_DURATION,
-            }
 
     if tracking_options:
         # Use face tracking and interpolation between frames

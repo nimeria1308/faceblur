@@ -13,6 +13,10 @@ def process_faces_in_frames(frames, encodings, frame_rate, score,
                             min_face_duration=MIN_FACE_DURATION,
                             tracking_duration=TRACKING_DURATION):
 
+    if score is None:
+        # Set default score if not provided
+        score = ENCODING_MAX_DISTANCE if encodings else IOU_MIN_SCORE
+
     # Bin faces into tracks in order to filter false positives and interpolate false negatives
     if encodings:
         # Use advanced tracking through face encodings (supported by model)
