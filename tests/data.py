@@ -410,11 +410,33 @@ INTEL_SAMPLE_VIDEOS_REPO_BRANCH = "master"
 INTEL_SAMPLE_VIDEOS_REPO_FOLDER = os.path.join(TEST_DATA_FOLDER, "faces", "intel-videos")
 INTEL_SAMPLE_VIDEOS_REPO_TEST_FOLDER = INTEL_SAMPLE_VIDEOS_REPO_FOLDER
 
+INTEL_SAMPLE_VIDEOS_SKIPPED = [
+    # No faces
+    "bolt-detection.mp4",
+    "bolt-multi-size-detection.mp4",
+    "bottle-detection.mp4",
+    "car-detection.mp4",
+    "fruit-and-vegetable-detection.mp4",
+    "one-by-one-person-detection.mp4",
+    "people-detection.mp4",
+    "person-bicycle-car-detection.mp4",
+    "store-aisle-detection.mp4",
+    "worker-zone-detection.mp4",
+
+    # Too long
+    "driver-action-recognition.mp4",
+]
+
 # face_recognition official repo with examples
 FACE_RECOGNITION_REPO = "https://github.com/ageitgey/face_recognition"
 FACE_RECOGNITION_REPO_BRANCH = "master"
 FACE_RECOGNITION_REPO_FOLDER = os.path.join(TEST_DATA_FOLDER, "faces", "face_recognition")
 FACE_RECOGNITION_REPO_TEST_FOLDER = os.path.join(FACE_RECOGNITION_REPO_FOLDER, "examples")
+
+FACE_RECOGNITION_SKIPPED = [
+    # Too long
+    "hamilton_clip.mp4",
+]
 
 
 def _prepare_files():
@@ -434,9 +456,9 @@ PILLOW_FILES = walk_files(PILLOW_TEST_FOLDER, PILLOW_SKIPPED)
 
 PILLOW_HEIF_FILES = walk_files(PILLOW_HEIF_TEST_FOLDER)
 
-INTEL_VIDEO_FILES = walk_files(INTEL_SAMPLE_VIDEOS_REPO_TEST_FOLDER)
+INTEL_VIDEO_FILES = walk_files(INTEL_SAMPLE_VIDEOS_REPO_TEST_FOLDER, INTEL_SAMPLE_VIDEOS_SKIPPED)
 
-FACE_RECOGNITION_FILES = walk_files(FACE_RECOGNITION_REPO_TEST_FOLDER)
+FACE_RECOGNITION_FILES = walk_files(FACE_RECOGNITION_REPO_TEST_FOLDER, FACE_RECOGNITION_SKIPPED)
 
 # Select only relevant files
 IMAGE_FILES = FFMPEG_FATE_FILES + PILLOW_FILES + PILLOW_HEIF_FILES
