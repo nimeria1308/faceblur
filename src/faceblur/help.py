@@ -9,7 +9,7 @@ from faceblur.faces.deidentify import STRENGTH as DEFAULT_STRENGTH
 from faceblur.faces.dlib import UPSCALE as DEFAULT_UPSCALE
 from faceblur.faces.mediapipe import CONFIDENCE as DEFAULT_CONFIDENCE
 from faceblur.faces.process import TRACKING_DURATION, MIN_FACE_DURATION
-from faceblur.faces.track import IOU_MIN_SCORE, ENCODING_MAX_DISTANCE
+from faceblur.faces.track import IOU_MIN_OVERLAP, ENCODING_MAX_DISTANCE
 
 
 APP = "A tool to obfuscate faces from photos and videos"
@@ -32,7 +32,7 @@ Defaults to {DEFAULT_MODEL}
 MODEL_MEDIAPIPE_CONFIDENCE = f"""
 Only used for MEDIA_PIPE models.
 
-Face detection confidence. The value is in (0..1).
+Face detection confidence. The value is in the range 0...100 percent.
 Smaller values find more faces, but produce more false positives.
 Higher values find less faces, but produce less false positives.
 
@@ -42,7 +42,7 @@ Defaults to {DEFAULT_CONFIDENCE}
 MODEL_DLIB_UPSCALING = f"""
 Only used for DLIB models.
 
-Input upscaling. The value is an integer in the range 1...
+Input upscaling. The value is a positive integer.
 
 Values closer to 1 find more faces, but produce more false positives.
 Higher values find less faces, but produce less false positives.
@@ -59,12 +59,16 @@ Only used for MEDIA_PIPE models.
 
 Uses a simple heuristic to bin faces into tracks: intersection over union.
 
+This is the minimum overlap in percent with previous faceboxes.
 The more subsequent face boxes overlap, the higher the score.
-Identical boxes produces a value of 1.0 for IoU, and boxes that do not intersect at all produce a 0.
+Identical boxes produces a value of 100 percent for IoU, and boxes that do not intersect
+at all produce a 0 percent.
+
 The value represents the minimum IoU needed to place faces in the same track.
+
 Higher values create more unique tracks, while lower values bin more faces into the same track.
 
-Defaults to {IOU_MIN_SCORE}
+Defaults to {IOU_MIN_OVERLAP}
 """
 
 TRACKING_MAX_FACE_ENCODING_DISTANCE = f"""
@@ -73,6 +77,8 @@ Only used for DLIB models.
 Uses a more robust face tracking heuristic: distance between face encodings.
 A face encoding is generated from the found face features (e.g. nose, eyes, etc.) so that
 it can more robustly match faces in separate frames.
+
+This is the distance in percent of how similar the face is.
 
 Lower values create more unique tracks, while higher values bin more faces into the same track.
 

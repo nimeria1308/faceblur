@@ -23,7 +23,7 @@ from faceblur.help import MODEL_DLIB_UPSCALING as UPSCALING_HELP
 from faceblur.help import TRACKING_MINIMUM_IOU as IOU_HELP
 from faceblur.help import TRACKING_MAX_FACE_ENCODING_DISTANCE as ENCODING_HELP
 from faceblur.help import TRACKING_DURATION as TRACKING_DURATION_HELP
-from faceblur.help import MIN_FACE_DURATION as MIN_FACE_DURATION_HELP
+from faceblur.help import TRACKING_MIN_FACE_DURATION as MIN_FACE_DURATION_HELP
 from faceblur.help import MODE as MODE_HELP
 from faceblur.help import BLUR_STRENGTH as STRENGTH_HELP
 from faceblur.help import IMAGE_FORMAT as IMAGE_FORMAT_HELP
@@ -56,7 +56,7 @@ def main():
                         help=MODEL_HELP)
 
     parser.add_argument("--model-confidence",
-                        type=float,
+                        type=int,
                         help=CONFIDENCE_HELP)
 
     parser.add_argument("--model-upscaling",
@@ -68,11 +68,11 @@ def main():
                         help="Disable face tracking for videos. On by default.")
 
     parser.add_argument("--tracking-min-iou",
-                        type=float,
+                        type=int,
                         help=IOU_HELP)
 
     parser.add_argument("--tracking-max-encoding-distance",
-                        type=float,
+                        type=int,
                         help=ENCODING_HELP)
 
     parser.add_argument("--tracking-duration",
@@ -89,7 +89,7 @@ def main():
                         help=MODE_HELP)
 
     parser.add_argument("--strength", "-s",
-                        type=float,
+                        type=int,
                         help=STRENGTH_HELP)
 
     parser.add_argument("--image-format", "-f",

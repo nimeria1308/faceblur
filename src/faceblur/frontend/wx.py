@@ -9,12 +9,15 @@ import wx
 from faceblur.app import get_supported_filenames
 from faceblur.app import faceblur
 from faceblur.faces.deidentify import MODES as BLUR_MODES
+from faceblur.faces.deidentify import STRENGTH as DEFAULT_STRENGTH
 from faceblur.faces.dlib import MODELS as DLIB_MODELS
+from faceblur.faces.dlib import UPSCALE as DEFAULT_UPSCALE
 from faceblur.faces.mediapipe import MODELS as MP_MODELS
+from faceblur.faces.mediapipe import CONFIDENCE as DEFAULT_CONFIDENCE
 from faceblur.faces.mode import Mode, DEFAULT as DEFAULT_MODE
 from faceblur.faces.model import Model, DEFAULT as DEFAULT_MODEL
 from faceblur.faces.process import TRACKING_DURATION, MIN_FACE_DURATION
-from faceblur.faces.track import IOU_MIN_SCORE, ENCODING_MAX_DISTANCE
+from faceblur.faces.track import IOU_MIN_OVERLAP, ENCODING_MAX_DISTANCE
 from faceblur.progress import Progress
 from faceblur.threading import TerminatingCookie
 
@@ -37,10 +40,6 @@ class Drop(wx.FileDropTarget):
                 self._window._file_list.Append(filename)
 
         return True
-
-
-DEFAULT_STRENGTH = 1.0
-DEFAULT_CONFIDENCE = 0.5
 
 
 class ProgressWrapper(Progress):
@@ -196,15 +195,14 @@ class MainWindow(wx.Frame):
         model_options_sizer.Add(wx.StaticText(model_options_panel, label="Detection model"), 0, wx.LEFT | wx.TOP, 5)
         model_options_sizer.Add(self._model, 0, wx.EXPAND | wx.ALL, 5)
 
-        self._mp_confidence_label = wx.StaticText(model_options_panel, label="Detection confidence")
-        self._mp_confidence = wx.SpinCtrlDouble(
-            model_options_panel, value=str(DEFAULT_CONFIDENCE),
-            min=0, max=1, inc=0.01)
+        self._mp_confidence_label = wx.StaticText(model_options_panel, label="Detection confidence (%)")
+        self._mp_confidence = wx.SpinCtrl(
+            model_options_panel, value=str(DEFAULT_CONFIDENCE))
         model_options_sizer.Add(self._mp_confidence_label, 0, wx.LEFT | wx.TOP, 5)
         model_options_sizer.Add(self._mp_confidence, 0, wx.EXPAND | wx.ALL, 5)
 
-        self._dlib_upscale_label = wx.StaticText(model_options_panel, label="Detection upscale")
-        self._dlib_upscale = wx.SpinCtrl(model_options_panel, value="1", min=1, max=8,)
+        self._dlib_upscale_label = wx.StaticText(model_options_panel, label="Detection upscale (x)")
+        self._dlib_upscale = wx.SpinCtrl(model_options_panel, value=str(DEFAULT_UPSCALE), min=1, max=8)
         model_options_sizer.Add(self._dlib_upscale_label, 0, wx.LEFT | wx.TOP, 5)
         model_options_sizer.Add(self._dlib_upscale, 0, wx.EXPAND | wx.ALL, 5)
 
@@ -218,21 +216,19 @@ class MainWindow(wx.Frame):
         self._tracking.Bind(wx.EVT_CHECKBOX, self._on_tracking)
         tracking_options_sizer.Add(self._tracking, 0, wx.EXPAND | wx.ALL, 5)
 
-        self._iou_min_score_label = wx.StaticText(tracking_options_panel, label="Min IoU tracking score")
-        self._iou_min_score = wx.SpinCtrlDouble(
-            tracking_options_panel, value=str(IOU_MIN_SCORE),
-            min=0, max=1, inc=0.01)
-        tracking_options_sizer.Add(self._iou_min_score_label, 0, wx.LEFT | wx.TOP, 5)
-        tracking_options_sizer.Add(self._iou_min_score, 0, wx.EXPAND | wx.ALL, 5)
+        self._iou_min_overlap_label = wx.StaticText(tracking_options_panel, label="Min overlap for IoU (%)")
+        self._iou_min_overlap = wx.SpinCtrl(
+            tracking_options_panel, value=str(IOU_MIN_OVERLAP))
+        tracking_options_sizer.Add(self._iou_min_overlap_label, 0, wx.LEFT | wx.TOP, 5)
+        tracking_options_sizer.Add(self._iou_min_overlap, 0, wx.EXPAND | wx.ALL, 5)
 
-        self._encoding_max_distance_label = wx.StaticText(tracking_options_panel, label="Max encoding distance")
+        self._encoding_max_distance_label = wx.StaticText(tracking_options_panel, label="Max encoding distance (%)")
         self._encoding_max_distance = wx.SpinCtrlDouble(
-            tracking_options_panel, value=str(ENCODING_MAX_DISTANCE),
-            min=0, max=1, inc=0.01)
+            tracking_options_panel, value=str(ENCODING_MAX_DISTANCE))
         tracking_options_sizer.Add(self._encoding_max_distance_label, 0, wx.LEFT | wx.TOP, 5)
         tracking_options_sizer.Add(self._encoding_max_distance, 0, wx.EXPAND | wx.ALL, 5)
 
-        self._min_track_face_duration_label = wx.StaticText(tracking_options_panel, label="Min face duration")
+        self._min_track_face_duration_label = wx.StaticText(tracking_options_panel, label="Min face duration (s)")
         self._min_track_face_duration = wx.SpinCtrlDouble(
             tracking_options_panel, value=str(MIN_FACE_DURATION),
             min=0, max=10, inc=0.1)
@@ -246,8 +242,8 @@ class MainWindow(wx.Frame):
         tracking_options_sizer.Add(self._tracking_duration, 0, wx.EXPAND | wx.ALL, 5)
 
         self._tracking_controls = [
-            self._iou_min_score_label,
-            self._iou_min_score,
+            self._iou_min_overlap_label,
+            self._iou_min_overlap,
             self._encoding_max_distance_label,
             self._encoding_max_distance,
             self._min_track_face_duration_label,
@@ -259,8 +255,8 @@ class MainWindow(wx.Frame):
         mp_controls = [
             self._mp_confidence_label,
             self._mp_confidence,
-            self._iou_min_score_label,
-            self._iou_min_score,
+            self._iou_min_overlap_label,
+            self._iou_min_overlap,
         ]
 
         dlib_controls = [
@@ -291,8 +287,8 @@ class MainWindow(wx.Frame):
         mode_options_sizer.Add(wx.StaticText(mode_options_panel, label="Mode"), 0, wx.LEFT | wx.TOP, 5)
         mode_options_sizer.Add(self._mode, 0, wx.EXPAND | wx.ALL, 5)
 
-        self._strength_label = wx.StaticText(mode_options_panel, label="Blur strength")
-        self._strength = wx.SpinCtrlDouble(mode_options_panel, value=str(DEFAULT_STRENGTH), min=0.1, max=10, inc=0.1)
+        self._strength_label = wx.StaticText(mode_options_panel, label="Blur strength (%)")
+        self._strength = wx.SpinCtrl(mode_options_panel, value=str(DEFAULT_STRENGTH), min=1, max=1000)
         mode_options_sizer.Add(self._strength_label, 0, wx.LEFT | wx.TOP, 5)
         mode_options_sizer.Add(self._strength, 0, wx.EXPAND | wx.ALL, 5)
 
@@ -414,7 +410,7 @@ Copyright (C) 2025, Simona Dimitrova"""
         self._model.SetValue(DEFAULT_MODEL)
         self._mp_confidence.SetValue(DEFAULT_CONFIDENCE)
         self._dlib_upscale.SetValue(1)
-        self._iou_min_score.SetValue(IOU_MIN_SCORE)
+        self._iou_min_overlap.SetValue(IOU_MIN_OVERLAP)
         self._encoding_max_distance.SetValue(ENCODING_MAX_DISTANCE)
         self._min_track_face_duration.SetValue(MIN_FACE_DURATION)
         self._tracking_duration.SetValue(TRACKING_DURATION)
@@ -502,7 +498,7 @@ Copyright (C) 2025, Simona Dimitrova"""
         model_options = {}
         if self._model.GetValue() in MP_MODELS:
             model_options["confidence"] = self._mp_confidence.GetValue()
-            tracking["score"] = self._iou_min_score.GetValue()
+            tracking["score"] = self._iou_min_overlap.GetValue()
 
         if self._model.GetValue() in DLIB_MODELS:
             model_options["upscale"] = self._dlib_upscale.GetValue()

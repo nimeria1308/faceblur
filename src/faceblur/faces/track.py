@@ -2,13 +2,16 @@
 
 import face_recognition
 
-IOU_MIN_SCORE = 0.05
-ENCODING_MAX_DISTANCE = 0.6
+IOU_MIN_OVERLAP = 5
+ENCODING_MAX_DISTANCE = 60
 
 
-def track_faces_iou(frames, min_score=IOU_MIN_SCORE):
+def track_faces_iou(frames, min_overlap=IOU_MIN_OVERLAP):
     tracks = []
     frames_with_tracks = []
+
+    # min_overlap is in %
+    min_overlap /= 100
 
     for faces in frames:
         frame = []
@@ -28,7 +31,7 @@ def track_faces_iou(frames, min_score=IOU_MIN_SCORE):
                         best_track_index = track_index
 
                 # Did we find a track?
-                if best_track_score < min_score:
+                if best_track_score < min_overlap:
                     # New track
                     best_track_index = len(tracks)
                     tracks.append([face])
@@ -44,6 +47,9 @@ def track_faces_iou(frames, min_score=IOU_MIN_SCORE):
 def track_faces_encodings(frames, encodings_for_frames, encoding_max_distance=ENCODING_MAX_DISTANCE):
     tracks = []
     frames_with_tracks = []
+
+    # encoding_max_distance is in %
+    encoding_max_distance /= 100
 
     assert len(frames) == len(encodings_for_frames)
 

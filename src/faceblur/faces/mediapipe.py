@@ -7,7 +7,7 @@ from faceblur.faces.detector import Detector
 from faceblur.faces.model import Model
 from mediapipe.python.solutions.face_detection import FaceDetection
 
-CONFIDENCE = 0.5
+CONFIDENCE = 50
 
 MODELS = [
     Model.MEDIA_PIPE_SHORT_RANGE,
@@ -17,7 +17,7 @@ MODELS = [
 
 class MediaPipeDetector(Detector):
     def __init__(self, model, confidence=CONFIDENCE):
-        super().__init__(FaceDetection(min_detection_confidence=confidence, model_selection=model))
+        super().__init__(FaceDetection(min_detection_confidence=confidence/100, model_selection=model))
 
     def detect(self, image):
         faces = []

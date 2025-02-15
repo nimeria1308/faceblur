@@ -1,6 +1,6 @@
 # Copyright (C) 2025, Simona Dimitrova
 
-from faceblur.faces.track import track_faces_iou, IOU_MIN_SCORE
+from faceblur.faces.track import track_faces_iou, IOU_MIN_OVERLAP
 from faceblur.faces.track import track_faces_encodings, ENCODING_MAX_DISTANCE
 from faceblur.faces.track import filter_frames_with_tracks
 from faceblur.faces.interpolate import interpolate_faces
@@ -15,7 +15,7 @@ def process_faces_in_frames(frames, encodings, frame_rate, score,
 
     if score is None:
         # Set default score if not provided
-        score = ENCODING_MAX_DISTANCE if encodings else IOU_MIN_SCORE
+        score = ENCODING_MAX_DISTANCE if encodings else IOU_MIN_OVERLAP
 
     # Bin faces into tracks in order to filter false positives and interpolate false negatives
     if encodings:
