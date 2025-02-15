@@ -30,23 +30,23 @@ Defaults to {fb_model.DEFAULT}
 """
 
 MODEL_MEDIAPIPE_CONFIDENCE = f"""
-Only used for MEDIA_PIPE models.
-
 Face detection confidence. The value is in the range 0...100 percent.
 Smaller values find more faces, but produce more false positives.
 Higher values find less faces, but produce less false positives.
 
-Defaults to {fb_mediapipe.CONFIDENCE}
+Defaults to {fb_mediapipe.CONFIDENCE}.
+
+Only used for MEDIA_PIPE models
 """
 
 MODEL_DLIB_UPSCALING = f"""
-Only used for DLIB models.
-
 Input upscaling. The value is a positive integer.
 Values closer to 1 find more faces, but produce more false positives.
 Higher values find less faces, but produce less false positives.
 
-Defaults to {fb_dlib.UPSCALE}
+Defaults to {fb_dlib.UPSCALE}.
+
+Only used for DLIB models
 """
 
 TRACKING = f"""
@@ -54,25 +54,25 @@ Face tracking used to do extra processing on faces in videos. On by default.
 """
 
 TRACKING_MINIMUM_IOU = f"""
-Only used for MEDIA_PIPE models.
-
 Uses a simple heuristic to bin faces into tracks: intersection over union.
 The value represents the minimum ovelap with previous face boxes (in percent) needed to place faces in the same track.
 Identical boxes produces a value of 100 percent for IoU, and boxes that do not intersect at all produce a 0 percent.
 The more subsequent face boxes overlap, the higher the score.
 Higher values create more unique tracks, while lower values bin more faces into the same track.
 
-Defaults to {fb_track.IOU_MIN_OVERLAP}
+Defaults to {fb_track.IOU_MIN_OVERLAP}.
+
+Only used for MEDIA_PIPE models
 """
 
 TRACKING_MAX_FACE_ENCODING_DISTANCE = f"""
-Only used for DLIB models.
-
 Uses a more robust face tracking heuristic: distance between face encodings, i.e. how similar the faces must be (in percent).
 A face encoding is generated from the found face features (e.g. nose, eyes, etc.) so that it can more robustly match faces in separate frames.
 Lower values create more unique tracks, while higher values bin more faces into the same track.
 
-Defaults to {fb_track.ENCODING_MAX_DISTANCE}
+Defaults to {fb_track.ENCODING_MAX_DISTANCE}.
+
+Only used for DLIB models
 """
 
 TRACKING_DURATION = f"""
@@ -101,11 +101,11 @@ Modes of operation:
 Defaults to {fb_model.DEFAULT}"""
 
 BLUR_STRENGTH = f"""
-Only used for blurring modes.
-
 Specify the strength of the obfuscation (in percent).
 
-Defaults to {fb_obfuscate.STRENGTH}
+Defaults to {fb_obfuscate.STRENGTH}.
+
+Only used for blurring modes
 """
 
 IMAGE_FORMAT = """
