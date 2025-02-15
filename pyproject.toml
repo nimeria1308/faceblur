@@ -18,7 +18,7 @@ classifiers = [
     "Topic :: Multimedia :: Video :: Display",
     "Topic :: Scientific/Engineering :: Image Processing",
 ]
-keywords = ["faceblur", "deidentify", "anonymize", "face", "recognition", "video", "image"]
+keywords = ["faceblur", "deidentify", "obfuscate", "anonymize", "face", "recognition", "video", "image"]
 dependencies = [
     "av >= 14.0.1",
     "pymediainfo >= 6.1.0",

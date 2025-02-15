@@ -5,7 +5,7 @@ import os
 from faceblur.av.video import DEFAULT_THREAD_TYPE
 from faceblur.faces.mode import DEFAULT as DEFAULT_MODE
 from faceblur.faces.model import DEFAULT as DEFAULT_MODEL
-from faceblur.faces.deidentify import STRENGTH as DEFAULT_STRENGTH
+from faceblur.faces.obfuscate import STRENGTH as DEFAULT_STRENGTH
 from faceblur.faces.dlib import UPSCALE as DEFAULT_UPSCALE
 from faceblur.faces.mediapipe import CONFIDENCE as DEFAULT_CONFIDENCE
 from faceblur.faces.process import TRACKING_DURATION, MIN_FACE_DURATION

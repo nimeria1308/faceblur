@@ -16,8 +16,8 @@ from faceblur.faces.mode import DEFAULT as DEFAULT_MODE
 from faceblur.faces.model import DEFAULT as DEFAULT_MODEL
 from faceblur.faces.identify import identify_faces_from_image, identify_faces_from_video
 from faceblur.faces.debug import debug_faces
-from faceblur.faces.deidentify import blur_faces
-from faceblur.faces.deidentify import MODES as BLUR_MODES
+from faceblur.faces.obfuscate import blur_faces
+from faceblur.faces.obfuscate import MODES as BLUR_MODES
 from faceblur.faces.process import process_faces_in_frames
 from faceblur.image import EXTENSIONS as IMAGE_EXTENSIONS
 from faceblur.image import FORMATS as IMAGE_FORMATS
@@ -26,7 +26,7 @@ from faceblur.path import is_filename_from_ext_group
 from faceblur.threading import TerminatedException, TerminatingCookie
 
 
-DEFAULT_OUT = "_deident"
+DEFAULT_OUT = "obfuscated"
 
 SUPPORTED_EXTENSIONS = set(CONTAINER_EXENTSIONS + IMAGE_EXTENSIONS)
 

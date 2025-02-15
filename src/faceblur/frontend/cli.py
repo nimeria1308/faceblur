@@ -8,8 +8,8 @@ from faceblur.app import DEFAULT_OUT
 from faceblur.app import faceblur
 from faceblur.av.container import FORMATS as CONTAINER_FORMATS
 from faceblur.av.video import ENCODERS, THREAD_TYPES, DEFAULT_THREAD_TYPE
-from faceblur.faces.deidentify import MODES as BLUR_MODES
-from faceblur.faces.deidentify import STRENGTH as DEFAULT_STRENGTH
+from faceblur.faces.obfuscate import MODES as BLUR_MODES
+from faceblur.faces.obfuscate import STRENGTH as DEFAULT_STRENGTH
 from faceblur.faces.dlib import MODELS as DLIB_MODELS
 from faceblur.faces.mediapipe import MODELS as MP_MODELS
 from faceblur.faces.mode import Mode, DEFAULT as DEFAULT_MODE

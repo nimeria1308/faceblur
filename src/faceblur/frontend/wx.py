@@ -8,8 +8,8 @@ import wx
 
 from faceblur.app import get_supported_filenames
 from faceblur.app import faceblur
-from faceblur.faces.deidentify import MODES as BLUR_MODES
-from faceblur.faces.deidentify import STRENGTH as DEFAULT_STRENGTH
+from faceblur.faces.obfuscate import MODES as BLUR_MODES
+from faceblur.faces.obfuscate import STRENGTH as DEFAULT_STRENGTH
 from faceblur.faces.dlib import MODELS as DLIB_MODELS
 from faceblur.faces.dlib import UPSCALE as DEFAULT_UPSCALE
 from faceblur.help import APP as APP_HELP
@@ -576,7 +576,7 @@ def main():
     args = parser.parse_args()
 
     app = wx.App(False)
-    frame = MainWindow(None, "FaceBlur: Automatic Photo and Video Deidentifier", args.verbose)
+    frame = MainWindow(None, "FaceBlur: Automatic Photo and Video Obfuscator", args.verbose)
     app.MainLoop()
 
 
