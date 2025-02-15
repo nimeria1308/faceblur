@@ -17,7 +17,7 @@ TEST_DATA_FOLDER = "testdata"
 # FFMPEG Fate suite repo and files
 FFMPEG_FATE_SUITE_URL = "rsync://fate-suite.ffmpeg.org/fate-suite/"
 
-FFMPEG_FATE_SUITE_FOLDER = os.path.join(TEST_DATA_FOLDER, "fate")
+FFMPEG_FATE_SUITE_FOLDER = os.path.join(TEST_DATA_FOLDER, "av", "fate")
 
 FFMPEG_FATE_SKIPPED = [
     # PermissionError on demux()
@@ -286,7 +286,7 @@ def _git_prepare(repo, folder, branch):
 # Pillow repo and files
 PILLOW_REPO = "https://github.com/python-pillow/Pillow.git"
 PILLOW_REPO_BRANCH = "main"
-PILLOW_REPO_FOLDER = os.path.join(TEST_DATA_FOLDER, "pillow")
+PILLOW_REPO_FOLDER = os.path.join(TEST_DATA_FOLDER, "av", "pillow")
 PILLOW_TEST_FOLDER = os.path.join(PILLOW_REPO_FOLDER, "Tests", "images")
 
 PILLOW_SKIPPED = [
@@ -401,7 +401,7 @@ PILLOW_SKIPPED = [
 # Pillow HEIF repo and files
 PILLOW_HEIF_REPO = "https://github.com/bigcat88/pillow_heif.git"
 PILLOW_HEIF_REPO_BRANCH = "master"
-PILLOW_HEIF_REPO_FOLDER = os.path.join(TEST_DATA_FOLDER, "pillow-heif")
+PILLOW_HEIF_REPO_FOLDER = os.path.join(TEST_DATA_FOLDER, "av", "pillow-heif")
 PILLOW_HEIF_TEST_FOLDER = os.path.join(PILLOW_HEIF_REPO_FOLDER, "tests", "images", "heif")
 
 # Intel IoT devkit sample videos for face detection
